@@ -1,5 +1,9 @@
+import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { getAlertsSummary } from '../api/alertsApi';
 import { useAuth } from '../context/AuthContext';
+
+const ALERTS_POLL_MS = 45000;
 
 function navClass({ isActive }) {
   return isActive ? 'nav-item active' : 'nav-item';
@@ -8,6 +12,28 @@ function navClass({ isActive }) {
 export default function Sidebar() {
   const { currentAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const [openAlerts, setOpenAlerts] = useState(0);
+
+  // Sidebar is always mounted (via Layout), so poll the alerts count from
+  // here directly rather than standing up a whole context for one number.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCount = () => {
+      getAlertsSummary()
+        .then((res) => {
+          if (!cancelled) setOpenAlerts(res?.total_open || 0);
+        })
+        .catch(() => {
+          /* keep last known count on failure */
+        });
+    };
+    fetchCount();
+    const id = setInterval(fetchCount, ALERTS_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -65,6 +91,14 @@ export default function Sidebar() {
           <path d="M17 8l5 5M22 8l-5 5" />
         </svg>
         <span>Users</span>
+      </NavLink>
+      <NavLink to="/alerts" end className={navClass}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 4v2M5.2 6.2l1.4 1.4M18.8 6.2l-1.4 1.4M5 15a7 7 0 0 1 14 0c0 2 .6 3.2 1.4 4.2H3.6C4.4 18.2 5 17 5 15z" />
+          <path d="M9.5 19a2.5 2.5 0 0 0 5 0" />
+        </svg>
+        <span>Alerts</span>
+        {openAlerts > 0 ? <span className="badge critical nav-badge">{openAlerts}</span> : null}
       </NavLink>
       {currentAdmin?.isSuperAdmin ? (
         <NavLink to="/admin" end className={navClass}>

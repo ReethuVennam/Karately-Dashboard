@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import AdminManagement from './pages/AdminManagement';
+import Alerts from './pages/Alerts';
 import BusinessOverview from './pages/BusinessOverview';
 import Login from './pages/Login';
 import Orders from './pages/Orders';
@@ -71,6 +72,7 @@ export default function App() {
               <Route path="/orders" element={<Orders />} />
               <Route path="/users" element={<Users />} />
               <Route path="/users/:clientId" element={<UserDetail />} />
+              <Route path="/alerts" element={<Alerts />} />
               <Route
                 path="/admin"
                 element={

@@ -12,7 +12,7 @@ const RANGE_CHIPS = [
 ];
 
 // Pull the theme's CSS custom properties so the charts use the same
-// gold/silver/diamond/info/success palette as the rest of the page —
+// gold/silver/info/success palette as the rest of the page —
 // mirrors renderCharts() reading getComputedStyle(document.documentElement).
 function themeColors() {
   const style = getComputedStyle(document.documentElement);
@@ -22,7 +22,6 @@ function themeColors() {
     silver: get('--silver'),
     info: get('--info'),
     success: get('--success'),
-    diamond: get('--diamond'),
   };
 }
 
@@ -54,7 +53,6 @@ export default function Overview() {
         { key: 'total_collected', bar: 'gold', label: 'Total money collected (₹)', value: inr(k.total_collected), note: labelWindow },
         { key: 'gold_grams', bar: 'gold', label: 'Gold purchased (grams)', value: grams(k.gold_grams, 2) + ' g', note: labelWindow },
         { key: 'silver_grams', bar: 'silver', label: 'Silver purchased (grams)', value: grams(k.silver_grams, 2) + ' g', note: labelWindow },
-        { key: 'diamond_grams', bar: 'diamond', label: 'Diamond purchased (grams)', value: grams(k.diamond_grams, 3) + ' g', note: labelWindow },
         { key: 'total_users', bar: 'info', label: 'Total users', value: num(k.total_users), note: 'all time' },
         { key: 'kyc_completed', bar: 'success', label: 'KYC completed', value: num(k.kyc_completed), note: 'all time' },
         { key: 'bank_validated', bar: 'success', label: 'Bank validated', value: num(k.bank_validated), note: 'all time' },
@@ -93,7 +91,6 @@ export default function Overview() {
       { label: 'Cash collected (₹)', data: daily.map((d) => d.cash_collected), borderColor: colors.gold, backgroundColor: colors.gold + '22', fill: true, tension: 0.35, yAxisID: 'y', pointRadius: 0 },
       { label: 'Gold grams', data: daily.map((d) => d.gold_grams), borderColor: colors.info, backgroundColor: 'transparent', tension: 0.35, yAxisID: 'y1', pointRadius: 0 },
       { label: 'Silver grams', data: daily.map((d) => d.silver_grams), borderColor: colors.silver, backgroundColor: 'transparent', tension: 0.35, yAxisID: 'y1', pointRadius: 0 },
-      { label: 'Diamond grams', data: daily.map((d) => d.diamond_grams), borderColor: colors.diamond, backgroundColor: 'transparent', tension: 0.35, yAxisID: 'y1', pointRadius: 0 },
     ],
   };
   const moneyOptions = {
@@ -171,10 +168,6 @@ export default function Overview() {
             <div className="kv">
               <div className="kv-label">Silver value collected (₹)</div>
               <div className="kv-value mono">{inr(k.silver_value)}</div>
-            </div>
-            <div className="kv">
-              <div className="kv-label">Diamond value collected (₹)</div>
-              <div className="kv-value mono">{inr(k.diamond_value)}</div>
             </div>
             <div className="kv">
               <div className="kv-label">Sell value (₹)</div>

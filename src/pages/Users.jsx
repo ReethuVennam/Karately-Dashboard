@@ -66,13 +66,15 @@ export default function Users() {
               <tr>
                 <th>Name</th>
                 <th>Mobile</th>
+                <th>Augmont ID</th>
                 <th>KYC</th>
                 <th>Bank</th>
-                <th>Address</th>
+                <th>Holder</th>
+                <th>Account</th>
+                <th>IFSC</th>
                 <th className="num">Buys ₹</th>
                 <th className="num">Gold g</th>
                 <th className="num">Silver g</th>
-                <th className="num">Diamond g</th>
                 <th className="num">Sells ₹</th>
                 <th className="num">Redeem</th>
                 <th>Last activity</th>
@@ -83,17 +85,17 @@ export default function Users() {
                 <tr key={u.client_id} onClick={() => navigate('/users/' + u.client_id)}>
                   <td>{u.name}</td>
                   <td className="mono">{u.mobile}</td>
+                  <td className="mono">{u.augmont_unique_id || '—'}</td>
                   <td>
                     <Badge variant={kycBadgeVariant(u.kyc_status)}>{u.kyc_status}</Badge>
                   </td>
                   <td>{u.bank_verified ? <Badge variant="success">Verified</Badge> : <Badge variant="muted">—</Badge>}</td>
-                  <td className="addr-cell dim" title={u.primary_address || 'No address on file'}>
-                    {u.primary_address || '—'}
-                  </td>
+                  <td>{u.primary_bank_holder || '—'}</td>
+                  <td className="mono">{u.primary_bank_number || '—'}</td>
+                  <td className="mono">{u.primary_bank_ifsc || '—'}</td>
                   <td className="num">{inr(u.buy_amount)}</td>
                   <td className="num">{grams(u.gold_grams, 2)}</td>
                   <td className="num">{grams(u.silver_grams, 2)}</td>
-                  <td className="num">{grams(u.diamond_grams, 3)}</td>
                   <td className="num">{inr(u.sell_amount)}</td>
                   <td className="num">{u.redeem_count}</td>
                   <td className="dim">{u.last_activity}</td>

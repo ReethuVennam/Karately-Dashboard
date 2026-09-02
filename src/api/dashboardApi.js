@@ -34,3 +34,8 @@ export async function getUsers(search, kyc) {
 export async function getUserDetail(clientId) {
   return apiGet(`/api/v1/admin/dashboard/users/${encodeURIComponent(clientId)}`);
 }
+
+/** GET /order-audit?merchantTransactionId= -> { audit: [...] } */
+export async function getOrderAudit(merchantTransactionId) {
+  return apiGet('/api/v1/admin/dashboard/order-audit', { params: { merchantTransactionId } });
+}

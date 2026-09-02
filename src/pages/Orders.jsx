@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getOrdersSummary, getRecentTransactions } from '../api/dashboardApi';
 import Badge from '../components/Badge';
 import KpiCard from '../components/KpiCard';
+import OrderAuditModal from '../components/OrderAuditModal';
 import { inr, num, ORDER_BADGE_VARIANT, ORDER_TYPE_LABEL, PAYMENT_BADGE_VARIANT } from '../utils/format';
 
 const RANGE_CHIPS = [7, 30, 90];
@@ -16,6 +17,7 @@ export default function Orders() {
   const [tab, setTab] = useState('ALL');
   const [summary, setSummary] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [auditTxnId, setAuditTxnId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +57,6 @@ export default function Orders() {
         { key: 'payment_failed', bar: 'critical', label: 'Payment failed', value: num(s.payment_failed) },
         { key: 'payment_pending', bar: 'warning', label: 'Payment pending', value: num(s.payment_pending) },
         { key: 'augmont_purchased', bar: 'gold', label: 'Gold purchased', value: num(s.augmont_purchased) },
-        { key: 'diamond_purchased', bar: 'diamond', label: 'Diamond purchased', value: num(s.diamond_purchased) },
         { key: 'paid_no_gold', bar: 'warning', extraClass: 'warn', label: '⚠️ Paid but no gold', value: num(s.paid_no_gold) },
         { key: 'total_collected', bar: 'gold', label: 'Total ₹ collected', value: inr(s.total_collected) },
       ]
@@ -116,7 +117,7 @@ export default function Orders() {
             </thead>
             <tbody>
               {transactions.map((t) => (
-                <tr key={t.order_id} style={{ cursor: 'default' }}>
+                <tr key={t.order_id} onClick={() => setAuditTxnId(t.merchant_transaction_id)}>
                   <td className="dim">{t.order_date}</td>
                   <td>{t.client_name}</td>
                   <td className="mono">{t.client_mobile}</td>
@@ -151,6 +152,8 @@ export default function Orders() {
         </div>
         {transactions.length === 0 ? <div className="empty-note">No transactions in this window.</div> : null}
       </div>
+
+      {auditTxnId ? <OrderAuditModal merchantTransactionId={auditTxnId} onClose={() => setAuditTxnId(null)} /> : null}
     </section>
   );
 }
