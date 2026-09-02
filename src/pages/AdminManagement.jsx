@@ -1,19 +1,38 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { changePassword, createAdmin, listAdmins, resetPassword } from '../api/authApi';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
-import { useAdmin } from '../context/AdminContext';
 import { useToast } from '../context/ToastContext';
 
 const emptyCreateForm = { name: '', phone: '', email: '', pass: '', super: false };
 
 export default function AdminManagement() {
-  const { admins, createAdmin, resetPassword, changePassword } = useAdmin();
   const showToast = useToast();
+
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [openModal, setOpenModal] = useState(null); // null | 'create' | 'reset' | 'change'
   const [createForm, setCreateForm] = useState(emptyCreateForm);
   const [resetForm, setResetForm] = useState({ phone: '', pass: '' });
   const [changeForm, setChangeForm] = useState({ current: '', next: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchAdmins = useCallback(async () => {
+    setLoading(true);
+    try {
+      const list = await listAdmins();
+      setAdmins(list);
+    } catch (err) {
+      showToast(err?.message || 'Failed to load admins');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchAdmins();
+  }, [fetchAdmins]);
 
   const closeAll = () => {
     setOpenModal(null);
@@ -22,36 +41,54 @@ export default function AdminManagement() {
     setChangeForm({ current: '', next: '' });
   };
 
-  const handleCreateAdmin = (e) => {
+  const handleCreateAdmin = async (e) => {
     e.preventDefault();
-    createAdmin({
-      fullName: createForm.name.trim(),
-      phoneNumber: createForm.phone.trim(),
-      email: createForm.email.trim(),
-      password: createForm.pass,
-      isSuperAdmin: createForm.super,
-    });
-    closeAll();
-    showToast('Admin account created');
-  };
-
-  const handleResetPassword = (e) => {
-    e.preventDefault();
-    resetPassword(resetForm.phone.trim(), resetForm.pass);
-    const phone = resetForm.phone.trim();
-    closeAll();
-    showToast('Password reset for ' + phone);
-  };
-
-  const handleChangePassword = (e) => {
-    e.preventDefault();
-    const ok = changePassword(changeForm.current, changeForm.next);
-    if (!ok) {
-      showToast('Current password is incorrect');
-      return;
+    setSubmitting(true);
+    try {
+      await createAdmin({
+        fullName: createForm.name.trim(),
+        phoneNumber: createForm.phone.trim(),
+        email: createForm.email.trim(),
+        password: createForm.pass,
+        isSuperAdmin: createForm.super,
+      });
+      closeAll();
+      showToast('Admin account created');
+      fetchAdmins();
+    } catch (err) {
+      showToast(err?.message || 'Failed to create admin');
+    } finally {
+      setSubmitting(false);
     }
-    closeAll();
-    showToast('Password updated');
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    const phone = resetForm.phone.trim();
+    setSubmitting(true);
+    try {
+      await resetPassword(phone, resetForm.pass);
+      closeAll();
+      showToast('Password reset for ' + phone);
+    } catch (err) {
+      showToast(err?.message || 'Failed to reset password');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await changePassword(changeForm.current, changeForm.next);
+      closeAll();
+      showToast('Password updated');
+    } catch (err) {
+      showToast(err?.message || 'Current password is incorrect');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const openResetFor = (phone) => {
@@ -91,7 +128,7 @@ export default function AdminManagement() {
             </thead>
             <tbody>
               {admins.map((a) => (
-                <tr key={a.id} style={{ cursor: 'default' }}>
+                <tr key={a.id ?? a.phoneNumber} style={{ cursor: 'default' }}>
                   <td>{a.fullName}</td>
                   <td className="mono">{a.phoneNumber}</td>
                   <td className="dim">{a.email}</td>
@@ -107,6 +144,7 @@ export default function AdminManagement() {
             </tbody>
           </table>
         </div>
+        {!loading && admins.length === 0 ? <div className="empty-note">No admin accounts found.</div> : null}
       </div>
 
       {openModal === 'create' ? (
@@ -141,7 +179,7 @@ export default function AdminManagement() {
               <button type="button" className="btn" onClick={closeAll}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
                 Create admin
               </button>
             </div>
@@ -164,7 +202,7 @@ export default function AdminManagement() {
               <button type="button" className="btn" onClick={closeAll}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
                 Reset password
               </button>
             </div>
@@ -192,7 +230,7 @@ export default function AdminManagement() {
               <button type="button" className="btn" onClick={closeAll}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
                 Change password
               </button>
             </div>

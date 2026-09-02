@@ -1,16 +1,20 @@
-import { NavLink } from 'react-router-dom';
-import { useAdmin } from '../context/AdminContext';
-import { useToast } from '../context/ToastContext';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function navClass({ isActive }) {
   return isActive ? 'nav-item active' : 'nav-item';
 }
 
 export default function Sidebar() {
-  const { currentAdmin } = useAdmin();
-  const showToast = useToast();
+  const { currentAdmin, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const initials = currentAdmin.fullName
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
+  const initials = (currentAdmin?.fullName || '')
     .split(' ')
     .map((w) => w[0])
     .slice(0, 2)
@@ -62,7 +66,7 @@ export default function Sidebar() {
         </svg>
         <span>Users</span>
       </NavLink>
-      {currentAdmin.isSuperAdmin ? (
+      {currentAdmin?.isSuperAdmin ? (
         <NavLink to="/admin" end className={navClass}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
@@ -76,15 +80,11 @@ export default function Sidebar() {
         <div className="who">
           <div className="av">{initials}</div>
           <div>
-            <div className="name">{currentAdmin.fullName}</div>
-            <div className="role">{currentAdmin.isSuperAdmin ? 'Super admin' : 'Admin'}</div>
+            <div className="name">{currentAdmin?.fullName}</div>
+            <div className="role">{currentAdmin?.isSuperAdmin ? 'Super admin' : 'Admin'}</div>
           </div>
         </div>
-        <button
-          className="btn btn-ghost logout-btn"
-          type="button"
-          onClick={() => showToast('Logged out (demo has no login screen — refresh to sign back in)')}
-        >
+        <button className="btn btn-ghost logout-btn" type="button" onClick={handleLogout}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <path d="M16 17l5-5-5-5" />

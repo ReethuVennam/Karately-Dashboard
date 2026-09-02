@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { apiUserDetail } from '../api/mockApi';
+import { getUserDetail } from '../api/dashboardApi';
 import Badge from '../components/Badge';
 import YesNo from '../components/YesNo';
-import { ORDER_TYPE_LABEL } from '../data/mockData';
-import { inr, kycBadgeVariant, ORDER_BADGE_VARIANT } from '../utils/format';
+import { inr, kycBadgeVariant, ORDER_BADGE_VARIANT, ORDER_TYPE_LABEL } from '../utils/format';
 
 const TABS = [
   { key: 'profile', label: 'Profile' },
@@ -22,9 +21,13 @@ export default function UserDetail() {
   useEffect(() => {
     let cancelled = false;
     setTab('profile');
-    apiUserDetail(clientId).then((res) => {
-      if (!cancelled) setData(res);
-    });
+    getUserDetail(clientId)
+      .then((res) => {
+        if (!cancelled) setData(res);
+      })
+      .catch(() => {
+        if (!cancelled) setData({ profile: null, orders: [], banks: [], addresses: [] });
+      });
     return () => {
       cancelled = true;
     };

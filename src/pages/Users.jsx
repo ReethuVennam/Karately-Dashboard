@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { apiUsers } from '../api/mockApi';
+import { getUsers } from '../api/dashboardApi';
 import Badge from '../components/Badge';
-import { inr, kycBadgeVariant } from '../utils/format';
+import { grams, inr, kycBadgeVariant } from '../utils/format';
 
 export default function Users() {
   const navigate = useNavigate();
@@ -13,9 +13,11 @@ export default function Users() {
 
   useEffect(() => {
     let cancelled = false;
-    apiUsers(search, kyc).then((res) => {
-      if (!cancelled) setUsers(res.users);
-    });
+    getUsers(search, kyc)
+      .then((res) => {
+        if (!cancelled) setUsers(res.users || []);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -89,9 +91,9 @@ export default function Users() {
                     {u.primary_address || '—'}
                   </td>
                   <td className="num">{inr(u.buy_amount)}</td>
-                  <td className="num">{u.gold_grams.toFixed(2)}</td>
-                  <td className="num">{u.silver_grams.toFixed(2)}</td>
-                  <td className="num">{u.diamond_grams.toFixed(3)}</td>
+                  <td className="num">{grams(u.gold_grams, 2)}</td>
+                  <td className="num">{grams(u.silver_grams, 2)}</td>
+                  <td className="num">{grams(u.diamond_grams, 3)}</td>
                   <td className="num">{inr(u.sell_amount)}</td>
                   <td className="num">{u.redeem_count}</td>
                   <td className="dim">{u.last_activity}</td>

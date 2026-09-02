@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { apiOrdersSummary, apiRecentTransactions } from '../api/mockApi';
+import { getOrdersSummary, getRecentTransactions } from '../api/dashboardApi';
 import Badge from '../components/Badge';
 import KpiCard from '../components/KpiCard';
-import { ORDER_TYPE_LABEL } from '../data/mockData';
-import { inr, num, ORDER_BADGE_VARIANT, PAYMENT_BADGE_VARIANT } from '../utils/format';
+import { inr, num, ORDER_BADGE_VARIANT, ORDER_TYPE_LABEL, PAYMENT_BADGE_VARIANT } from '../utils/format';
 
 const RANGE_CHIPS = [7, 30, 90];
 const TXN_TABS = [
@@ -20,9 +19,11 @@ export default function Orders() {
 
   useEffect(() => {
     let cancelled = false;
-    apiOrdersSummary(days).then((res) => {
-      if (!cancelled) setSummary(res);
-    });
+    getOrdersSummary(days)
+      .then((res) => {
+        if (!cancelled) setSummary(res);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -30,9 +31,11 @@ export default function Orders() {
 
   useEffect(() => {
     let cancelled = false;
-    apiRecentTransactions(days, 50, tab).then((res) => {
-      if (!cancelled) setTransactions(res.transactions);
-    });
+    getRecentTransactions(days, 50, tab)
+      .then((res) => {
+        if (!cancelled) setTransactions(res.transactions || []);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
-import { apiOverview } from '../api/mockApi';
+import { getOverview } from '../api/dashboardApi';
 import KpiCard from '../components/KpiCard';
-import { inr, num } from '../utils/format';
+import { grams, inr, num } from '../utils/format';
 
 const RANGE_CHIPS = [
   { days: 1, label: 'Today' },
@@ -33,9 +33,13 @@ export default function Overview() {
 
   useEffect(() => {
     let cancelled = false;
-    apiOverview(days).then((res) => {
-      if (!cancelled) setData(res);
-    });
+    getOverview(days)
+      .then((res) => {
+        if (!cancelled) setData(res);
+      })
+      .catch(() => {
+        /* handled globally for 401s; other failures just leave the panel empty */
+      });
     return () => {
       cancelled = true;
     };
@@ -48,9 +52,9 @@ export default function Overview() {
   const kpiCards = k
     ? [
         { key: 'total_collected', bar: 'gold', label: 'Total money collected (₹)', value: inr(k.total_collected), note: labelWindow },
-        { key: 'gold_grams', bar: 'gold', label: 'Gold purchased (grams)', value: k.gold_grams.toFixed(2) + ' g', note: labelWindow },
-        { key: 'silver_grams', bar: 'silver', label: 'Silver purchased (grams)', value: k.silver_grams.toFixed(2) + ' g', note: labelWindow },
-        { key: 'diamond_grams', bar: 'diamond', label: 'Diamond purchased (grams)', value: k.diamond_grams.toFixed(3) + ' g', note: labelWindow },
+        { key: 'gold_grams', bar: 'gold', label: 'Gold purchased (grams)', value: grams(k.gold_grams, 2) + ' g', note: labelWindow },
+        { key: 'silver_grams', bar: 'silver', label: 'Silver purchased (grams)', value: grams(k.silver_grams, 2) + ' g', note: labelWindow },
+        { key: 'diamond_grams', bar: 'diamond', label: 'Diamond purchased (grams)', value: grams(k.diamond_grams, 3) + ' g', note: labelWindow },
         { key: 'total_users', bar: 'info', label: 'Total users', value: num(k.total_users), note: 'all time' },
         { key: 'kyc_completed', bar: 'success', label: 'KYC completed', value: num(k.kyc_completed), note: 'all time' },
         { key: 'bank_validated', bar: 'success', label: 'Bank validated', value: num(k.bank_validated), note: 'all time' },

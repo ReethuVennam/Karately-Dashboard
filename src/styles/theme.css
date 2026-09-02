@@ -93,6 +93,55 @@ input,select{ font-family:inherit; }
 svg{ width:16px; height:16px; }
 
 /* ==========================================================================
+   Login screen
+   ========================================================================== */
+.login-wrap{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(680px 420px at 14% 8%, rgba(169,114,15,.10), transparent 60%),
+    radial-gradient(560px 380px at 90% 92%, rgba(91,100,112,.10), transparent 60%),
+    var(--bg);
+  padding:24px;
+}
+.login-card{
+  width:100%;
+  max-width:392px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);
+  padding:36px 32px 30px;
+}
+.login-mark{
+  display:flex; align-items:center; gap:10px; margin-bottom:26px;
+}
+.login-mark .coin{
+  width:34px; height:34px; border-radius:50%;
+  background:linear-gradient(155deg,#C99A3E,#8F620F);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.25), var(--shadow-xs);
+  flex-shrink:0;
+}
+.login-mark .coin svg{ width:18px; height:18px; stroke:#FFF7E6; }
+.login-mark .word{ font-size:18px; font-weight:700; letter-spacing:-.01em; }
+.login-mark .word span{ color:var(--gold); }
+.login-sub{ color:var(--text-dim); font-size:12.5px; margin-bottom:26px; }
+.login-forgot{ text-align:center; margin-top:16px; font-size:12px; color:var(--text-faint); }
+.login-forgot a{ color:var(--gold); font-weight:600; cursor:pointer; }
+.login-err{
+  background:var(--critical-soft); color:var(--critical); border:1px solid rgba(172,58,58,.25);
+  border-radius:var(--radius-sm); padding:9px 11px; font-size:12px; margin-bottom:16px;
+}
+.login-hint{
+  margin-top:22px; padding:12px 13px; border:1px dashed var(--border); border-radius:var(--radius-sm);
+  font-size:11.5px; color:var(--text-faint); line-height:1.6;
+}
+.login-hint b{ color:var(--text-dim); }
+
+/* ==========================================================================
    Shell layout
    ========================================================================== */
 .shell{
