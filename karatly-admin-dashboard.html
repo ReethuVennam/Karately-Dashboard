@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Karatly Admin — Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+/* ==========================================================================
+   Karatly Admin — Design System
+   Subject: a digital gold/silver savings app. The palette is built around
+   the two metals the product deals in — an antique-gold accent for value
+   and action, a slate "silver" secondary for the second metal — set on a
+   quiet warm-neutral canvas so the metals read as color, not decoration.
+   Typeface pairing: Inter (UI) + IBM Plex Mono (money, weights, IDs)
+   ========================================================================== */
+
+:root{
+  --bg:            #F6F4EF;
+  --bg-2:          #FFFFFF;
+  --panel:         #FFFFFF;
+  --panel-2:       #F1EEE5;
+  --panel-hover:   #EBE7DB;
+  --border:        #E3DFD1;
+  --border-soft:   #EDEAE0;
+
+  --text:          #1C1A14;
+  --text-dim:      #655F4F;
+  --text-faint:    #9C9481;
+
+  --gold:          #A9720F;      /* signature accent — gold */
+  --gold-dim:      #7C5309;
+  --gold-soft:     rgba(169,114,15,.12);
+  --gold-ink:      #FFFFFF;
+
+  --silver:        #5B6470;      /* secondary metal accent */
+  --silver-soft:   rgba(91,100,112,.12);
+
+  --diamond:       #3C7A9E;      /* third metal accent — cool "diamond" blue */
+  --diamond-soft:  rgba(60,122,158,.12);
+
+  --info:          #34617E;
+  --info-soft:     rgba(52,97,126,.09);
+
+  --success:       #1D7A46;
+  --success-soft:  rgba(29,122,70,.10);
+  --warning:        #B4530A;
+  --warning-soft:  rgba(180,83,10,.12);
+  --critical:      #AC3A3A;
+  --critical-soft: rgba(172,58,58,.10);
+
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-xs: 0 1px 2px rgba(28,26,20,.04);
+  --shadow-sm: 0 1px 3px rgba(28,26,20,.06), 0 1px 2px rgba(28,26,20,.04);
+  --shadow-md: 0 8px 24px rgba(28,26,20,.08), 0 2px 6px rgba(28,26,20,.04);
+  --shadow-lg: 0 20px 48px rgba(28,26,20,.16), 0 4px 12px rgba(28,26,20,.06);
+
+  --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+
+  --sidebar-w: 236px;
+  --topbar-h:  58px;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-ui);
+  font-size:13.5px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{ margin:0; font-weight:600; letter-spacing:-.01em; }
+p{ margin:0; }
+a{ color:inherit; text-decoration:none; }
+button{ font-family:inherit; cursor:pointer; }
+table{ border-collapse:collapse; width:100%; }
+input,select{ font-family:inherit; }
+::selection{ background:var(--gold-soft); color:var(--text); }
+:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; border-radius:3px; }
+
+.mono{ font-family:var(--font-mono); }
+.dim{ color:var(--text-dim); }
+.faint{ color:var(--text-faint); }
+.flex{ display:flex; align-items:center; }
+.gap-8{ gap:8px; }
+.gap-6{ gap:6px; }
+.hidden{ display:none !important; }
+
+::-webkit-scrollbar{ width:9px; height:9px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:#DBD5C2; border-radius:8px; }
+::-webkit-scrollbar-thumb:hover{ background:#C9C2A9; }
+
+svg{ width:16px; height:16px; }
+
+/* ==========================================================================
+   Login screen
+   ========================================================================== */
+.login-wrap{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(680px 420px at 14% 8%, rgba(169,114,15,.10), transparent 60%),
+    radial-gradient(560px 380px at 90% 92%, rgba(91,100,112,.10), transparent 60%),
+    var(--bg);
+  padding:24px;
+}
+.login-card{
+  width:100%;
+  max-width:392px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);
+  padding:36px 32px 30px;
+}
+.login-mark{
+  display:flex; align-items:center; gap:10px; margin-bottom:26px;
+}
+.login-mark .coin{
+  width:34px; height:34px; border-radius:50%;
+  background:linear-gradient(155deg,#C99A3E,#8F620F);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.25), var(--shadow-xs);
+  flex-shrink:0;
+}
+.login-mark .coin svg{ width:18px; height:18px; stroke:#FFF7E6; }
+.login-mark .word{ font-size:18px; font-weight:700; letter-spacing:-.01em; }
+.login-mark .word span{ color:var(--gold); }
+.login-sub{ color:var(--text-dim); font-size:12.5px; margin-bottom:26px; }
+.field{ margin-bottom:16px; }
+.field label{ display:block; font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:6px; }
+.field input{
+  width:100%; padding:10px 12px; border:1px solid var(--border);
+  border-radius:var(--radius-sm); background:var(--bg-2); font-size:13.5px; color:var(--text);
+  transition:border-color .12s;
+}
+.field input:focus{ border-color:var(--gold); }
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:9px 14px; border-radius:var(--radius-sm); border:1px solid var(--border);
+  background:var(--bg-2); color:var(--text); font-size:12.5px; font-weight:600;
+  transition:background .12s, border-color .12s;
+}
+.btn:hover{ background:var(--panel-2); }
+.btn-sm{ padding:6px 10px; font-size:11.5px; }
+.btn-ghost{ border-color:transparent; background:transparent; }
+.btn-ghost:hover{ background:var(--panel-2); }
+.btn-primary{ background:var(--gold); border-color:var(--gold); color:var(--gold-ink); }
+.btn-primary:hover{ background:var(--gold-dim); border-color:var(--gold-dim); }
+.btn-block{ width:100%; padding:11px; font-size:13px; }
+.btn-danger{ background:var(--critical); border-color:var(--critical); color:#fff; }
+.btn-danger:hover{ filter:brightness(.92); }
+.login-forgot{ text-align:center; margin-top:16px; font-size:12px; color:var(--text-faint); }
+.login-forgot a{ color:var(--gold); font-weight:600; cursor:pointer; }
+.login-err{
+  background:var(--critical-soft); color:var(--critical); border:1px solid rgba(172,58,58,.25);
+  border-radius:var(--radius-sm); padding:9px 11px; font-size:12px; margin-bottom:16px; display:none;
+}
+.login-hint{
+  margin-top:22px; padding:12px 13px; border:1px dashed var(--border); border-radius:var(--radius-sm);
+  font-size:11.5px; color:var(--text-faint); line-height:1.6;
+}
+.login-hint b{ color:var(--text-dim); }
+
+/* ==========================================================================
+   Shell layout
+   ========================================================================== */
+.shell{
+  display:grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--topbar-h) 1fr;
+  grid-template-areas: "sidebar topbar" "sidebar main";
+  height:100vh;
+}
+.sidebar{
+  grid-area:sidebar;
+  background:var(--bg-2);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  padding:16px 12px;
+}
+.brand{ display:flex; align-items:center; gap:9px; padding:4px 8px 18px; }
+.brand .coin{
+  width:26px; height:26px; border-radius:50%; flex-shrink:0;
+  background:linear-gradient(155deg,#C99A3E,#8F620F);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.25);
+}
+.brand .coin svg{ width:14px; height:14px; stroke:#FFF7E6; }
+.brand .word{ font-size:14.5px; font-weight:700; }
+.brand .word span{ color:var(--gold); }
+.nav-section-label{
+  font-size:10.5px; font-weight:700; letter-spacing:.03em; color:var(--text-faint);
+  padding:14px 10px 6px;
+}
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:var(--radius-sm);
+  font-size:13px; font-weight:500; color:var(--text-dim); cursor:pointer; position:relative;
+}
+.nav-item svg{ width:16px; height:16px; flex-shrink:0; opacity:.75; }
+.nav-item:hover{ background:var(--panel-2); color:var(--text); }
+.nav-item.active{ background:var(--gold-soft); color:var(--gold-dim); font-weight:600; }
+.nav-item.active svg{ opacity:1; stroke:var(--gold-dim); }
+.sidebar-foot{ margin-top:auto; border-top:1px solid var(--border-soft); padding-top:12px; }
+.who{ display:flex; align-items:center; gap:9px; padding:6px 8px 10px; }
+.who .av{
+  width:30px; height:30px; border-radius:50%; background:var(--panel-2); color:var(--text-dim);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;
+}
+.who .name{ font-size:12.5px; font-weight:600; }
+.who .role{ font-size:11px; color:var(--text-faint); }
+.logout-btn{ width:100%; justify-content:flex-start; }
+
+.topbar{
+  grid-area:topbar; background:var(--bg-2); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; padding:0 22px;
+}
+.topbar h1{ font-size:15px; }
+.topbar .desc{ font-size:11.5px; color:var(--text-faint); margin-top:1px; }
+
+.main{ grid-area:main; overflow-y:auto; padding:22px 26px 40px; }
+.view{ display:none; }
+.view.active{ display:block; }
+
+.section-head{ display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+.section-head h2{ font-size:16px; }
+.section-head .desc{ font-size:12px; color:var(--text-faint); margin-top:3px; }
+
+.chip-group{ display:flex; background:var(--panel-2); border-radius:99px; padding:3px; gap:2px; }
+.chip{ padding:6px 13px; border-radius:99px; font-size:12px; font-weight:600; color:var(--text-dim); cursor:pointer; }
+.chip.active{ background:var(--bg-2); color:var(--gold-dim); box-shadow:var(--shadow-xs); }
+
+/* KPI grid */
+.kpi-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+.kpi-card{
+  position:relative; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:14px 14px 13px; overflow:hidden;
+}
+.kpi-bar{ position:absolute; top:0; left:0; right:0; height:3px; }
+.kpi-bar.gold{ background:var(--gold); }
+.kpi-bar.silver{ background:var(--silver); }
+.kpi-bar.diamond{ background:var(--diamond); }
+.kpi-bar.info{ background:var(--info); }
+.kpi-bar.success{ background:var(--success); }
+.kpi-bar.warning{ background:var(--warning); }
+.kpi-bar.critical{ background:var(--critical); }
+.kpi-label{ font-size:11.5px; color:var(--text-dim); font-weight:600; }
+.kpi-value{ font-family:var(--font-mono); font-size:21px; font-weight:600; margin-top:7px; letter-spacing:-.01em; }
+.kpi-note{ font-size:10.5px; color:var(--text-faint); margin-top:5px; }
+.kpi-card.warn .kpi-value{ color:var(--warning); }
+.kpi-card.ok .kpi-value{ color:var(--success); }
+
+.grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+.grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+
+/* Business Overview — MIS snapshot */
+.kv-row{ display:flex; justify-content:space-between; font-size:12px; padding:8px 0; border-bottom:1px dashed var(--border-soft); }
+.kv-row .k{ color:var(--text-faint); }
+.kv-row .v{ font-family:var(--font-mono); font-weight:600; color:var(--text); }
+.row-label{ color:var(--text); font-weight:500; }
+.mis-select{ padding:1px 5px; font-size:10.5px; border-radius:5px; border:1px solid var(--border); background:var(--bg-2); }
+.report-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin-bottom:20px; }
+.report-card{
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:15px; display:flex; flex-direction:column; gap:9px; box-shadow:var(--shadow-xs);
+  transition:box-shadow .15s ease, transform .15s ease; cursor:pointer;
+}
+.report-card:hover{ box-shadow:var(--shadow-sm); transform:translateY(-1px); }
+.report-card .r-icon{
+  width:28px; height:28px; border-radius:7px; background:var(--gold-soft); color:var(--gold-dim);
+  display:flex; align-items:center; justify-content:center;
+}
+.report-card .r-icon svg{ width:15px; height:15px; }
+.report-card h4{ font-size:12.5px; }
+.report-card p{ font-size:11px; color:var(--text-faint); }
+.report-card .r-foot{ margin-top:auto; padding-top:2px; }
+.panel{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; }
+.panel-head{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+.panel-head h3{ font-size:13.5px; }
+.panel-head .desc{ font-size:11px; color:var(--text-faint); margin-top:2px; }
+.chart-canvas-wrap{ height:230px; }
+
+/* Tables */
+.table-wrap{ overflow-x:auto; }
+.data-table{ font-size:12.5px; }
+.data-table th{
+  text-align:left; font-size:10.5px; font-weight:700; letter-spacing:.02em; color:var(--text-faint);
+  padding:0 10px 8px; border-bottom:1px solid var(--border-soft); white-space:nowrap;
+}
+.data-table td{ padding:10px 10px; border-bottom:1px solid var(--border-soft); white-space:nowrap; }
+.data-table tbody tr{ cursor:pointer; }
+.data-table tbody tr:hover{ background:var(--panel-2); }
+.data-table .num{ font-family:var(--font-mono); text-align:right; }
+.data-table th.num{ text-align:right; }
+.id-cell{ font-family:var(--font-mono); color:var(--text-dim); }
+.addr-cell{ max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap !important; }
+
+.badge{ display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:99px; font-size:10.5px; font-weight:700; }
+.badge.success{ background:var(--success-soft); color:var(--success); }
+.badge.warning{ background:var(--warning-soft); color:var(--warning); }
+.badge.critical{ background:var(--critical-soft); color:var(--critical); }
+.badge.info{ background:var(--info-soft); color:var(--info); }
+.badge.muted{ background:var(--panel-2); color:var(--text-dim); }
+
+.check{ display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:600; }
+.check.yes{ color:var(--success); }
+.check.no{ color:var(--critical); }
+
+/* Users toolbar */
+.toolbar{ display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.search-box{ position:relative; flex:1; min-width:220px; max-width:340px; }
+.search-box svg{ position:absolute; left:11px; top:50%; transform:translateY(-50%); opacity:.5; width:14px; height:14px; }
+.search-box input{
+  width:100%; padding:9px 12px 9px 32px; border:1px solid var(--border); border-radius:var(--radius-sm);
+  background:var(--bg-2); font-size:12.5px;
+}
+.search-box input:focus{ border-color:var(--gold); }
+.select-box select{
+  padding:9px 30px 9px 12px; border:1px solid var(--border); border-radius:var(--radius-sm);
+  background:var(--bg-2); font-size:12.5px; color:var(--text); appearance:none;
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" stroke="%23655F4F" stroke-width="2"><path d="M1 3l4 4 4-4"/></svg>');
+  background-repeat:no-repeat; background-position:right 11px center;
+}
+.result-count{ font-size:11.5px; color:var(--text-faint); margin-left:auto; }
+
+/* User detail */
+.back-link{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text-dim); cursor:pointer; margin-bottom:14px; }
+.back-link:hover{ color:var(--gold-dim); }
+.profile-head{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+.profile-head .av{
+  width:52px; height:52px; border-radius:50%; background:var(--gold-soft); color:var(--gold-dim);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:19px; flex-shrink:0;
+}
+.profile-head h2{ font-size:17px; }
+.profile-head .sub{ font-size:12px; color:var(--text-faint); margin-top:2px; }
+
+.tabs{ display:flex; gap:2px; border-bottom:1px solid var(--border); margin-bottom:18px; }
+.tab{ padding:10px 15px; font-size:12.5px; font-weight:600; color:var(--text-dim); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+.tab:hover{ color:var(--text); }
+.tab.active{ color:var(--gold-dim); border-color:var(--gold); }
+.tab-pane{ display:none; }
+.tab-pane.active{ display:block; }
+
+.kv-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px 20px; }
+.kv{ padding:12px 0; border-bottom:1px solid var(--border-soft); }
+.kv-label{ font-size:10.5px; color:var(--text-faint); font-weight:700; letter-spacing:.02em; margin-bottom:5px; }
+.kv-value{ font-size:13px; font-weight:600; }
+.kv-value.mono{ font-family:var(--font-mono); }
+
+.list-cards{ display:flex; flex-direction:column; gap:10px; }
+.list-card{ border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.list-card .lc-title{ font-size:13px; font-weight:600; }
+.list-card .lc-sub{ font-size:11.5px; color:var(--text-faint); margin-top:3px; }
+
+/* Modal */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(28,26,20,.42); display:flex; align-items:center; justify-content:center;
+  z-index:50; padding:20px;
+}
+.modal{
+  background:var(--panel); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); width:100%; max-width:420px;
+  padding:22px 22px 20px; border:1px solid var(--border);
+}
+.modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.modal-head h3{ font-size:14.5px; }
+.modal-close{ background:none; border:none; color:var(--text-faint); font-size:18px; line-height:1; padding:2px; }
+.modal-close:hover{ color:var(--text); }
+.modal-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+.checkbox-row{ display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.checkbox-row input{ width:15px; height:15px; }
+.checkbox-row label{ font-size:12.5px; color:var(--text-dim); }
+
+.toast{
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+  background:var(--text); color:#fff; padding:10px 18px; border-radius:99px; font-size:12.5px; font-weight:600;
+  box-shadow:var(--shadow-lg); z-index:80; transition:opacity .18s, transform .18s; pointer-events:none;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+.empty-note{ text-align:center; padding:36px 10px; color:var(--text-faint); font-size:12.5px; }
+
+@media (max-width:1080px){
+  .kpi-grid{ grid-template-columns:repeat(3,1fr); }
+  .grid-2{ grid-template-columns:1fr; }
+  .kv-grid{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:640px){
+  .sidebar{ display:none; }
+  .shell{ grid-template-columns:1fr; grid-template-areas:"topbar" "main"; }
+  .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ===================================================================
+     APP SHELL
+     (Login screen removed for this preview — see commented-out block
+     below in the script, apiLogin(), for wiring real auth back in.)
+     =================================================================== -->
+<div class="shell" id="app-shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="coin"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9.5c0-1.1 1.3-2 3-2s3 .9 3 2-1.3 1.5-3 2-3 .9-3 2 1.3 2 3 2 3-.9 3-2"/></svg></div>
+      <div class="word">Karat<span>ly</span></div>
+    </div>
+
+    <div class="nav-section-label">Menu</div>
+    <div class="nav-item active" data-nav="overview" onclick="showView('overview')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
+      <span>Overview</span>
+    </div>
+    <div class="nav-item" data-nav="business" onclick="showView('business')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/><path d="M10 12v2h4v-2"/></svg>
+      <span>Business Overview</span>
+    </div>
+    <div class="nav-item" data-nav="orders" onclick="showView('orders')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+      <span>Orders</span>
+    </div>
+    <div class="nav-item" data-nav="users" onclick="showView('users')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 4.2 1.7"/><path d="M17 8l5 5M22 8l-5 5"/></svg>
+      <span>Users</span>
+    </div>
+    <div class="nav-item" data-nav="admin" id="nav-admin" onclick="showView('admin')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>Admin management</span>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="who">
+        <div class="av" id="who-av">SA</div>
+        <div>
+          <div class="name" id="who-name">Super Admin</div>
+          <div class="role" id="who-role">Super admin</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost logout-btn" onclick="handleLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        Log out
+      </button>
+    </div>
+  </aside>
+
+  <div class="topbar">
+    <div>
+      <h1 id="topbar-title">Dashboard overview</h1>
+      <div class="desc" id="topbar-desc">Money collected, gold &amp; silver purchased, and user growth</div>
+    </div>
+  </div>
+
+  <main class="main">
+
+    <!-- =============================================================
+         2. DASHBOARD OVERVIEW
+         API: GET /api/v1/admin/dashboard/overview?days=30
+         ============================================================= -->
+    <section class="view active" id="view-overview">
+      <div class="section-head">
+        <div>
+          <h2>Dashboard overview</h2>
+          <div class="desc">Plain-language snapshot of the business — no SQL required</div>
+        </div>
+        <div class="chip-group" id="range-chips">
+          <span class="chip" data-days="1" onclick="setRange(1)">Today</span>
+          <span class="chip" data-days="7" onclick="setRange(7)">7d</span>
+          <span class="chip active" data-days="30" onclick="setRange(30)">30d</span>
+          <span class="chip" data-days="90" onclick="setRange(90)">90d</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><span class="kpi-bar gold"></span>
+          <div class="kpi-label">Total money collected (₹)</div>
+          <div class="kpi-value" id="kpi-total_collected">—</div>
+          <div class="kpi-note" id="kpi-total_collected-note"></div>
+        </div>
+        <div class="kpi-card"><span class="kpi-bar gold"></span>
+          <div class="kpi-label">Gold purchased (grams)</div>
+          <div class="kpi-value" id="kpi-gold_grams">—</div>
+          <div class="kpi-note" id="kpi-gold_grams-note"></div>
+        </div>
+        <div class="kpi-card"><span class="kpi-bar silver"></span>
+          <div class="kpi-label">Silver purchased (grams)</div>
+          <div class="kpi-value" id="kpi-silver_grams">—</div>
+          <div class="kpi-note" id="kpi-silver_grams-note"></div>
+        </div>
+        <div class="kpi-card"><span class="kpi-bar diamond"></span>
+          <div class="kpi-label">Diamond purchased (grams)</div>
+          <div class="kpi-value" id="kpi-diamond_grams">—</div>
+          <div class="kpi-note" id="kpi-diamond_grams-note"></div>
+        </div>
+        <div class="kpi-card"><span class="kpi-bar info"></span>
+          <div class="kpi-label">Total users</div>
+          <div class="kpi-value" id="kpi-total_users">—</div>
+          <div class="kpi-note" id="kpi-total_users-note"></div>
+        </div>
+        <div class="kpi-card"><span class="kpi-bar success"></span>
+          <div class="kpi-label">KYC completed</div>
+          <div class="kpi-value" id="kpi-kyc_completed">—</div>
+          <div class="kpi-note" id="kpi-kyc_completed-note"></div>
+        </div>
+
+        <div class="kpi-card"><span class="kpi-bar success"></span>
+          <div class="kpi-label">Bank validated</div>
+          <div class="kpi-value" id="kpi-bank_validated">—</div>
+          <div class="kpi-note" id="kpi-bank_validated-note"></div>
+        </div>
+        <div class="kpi-card"><span class="kpi-bar gold"></span>
+          <div class="kpi-label">Sells done</div>
+          <div class="kpi-value" id="kpi-sell_count">—</div>
+          <div class="kpi-note" id="kpi-sell_count-note"></div>
+        </div>
+        <div class="kpi-card"><span class="kpi-bar silver"></span>
+          <div class="kpi-label">Coins redeemed</div>
+          <div class="kpi-value" id="kpi-redeem_count">—</div>
+          <div class="kpi-note" id="kpi-redeem_count-note"></div>
+        </div>
+        <div class="kpi-card warn"><span class="kpi-bar warning"></span>
+          <div class="kpi-label">⚠️ Paid but no gold</div>
+          <div class="kpi-value" id="kpi-paid_no_gold">—</div>
+          <div class="kpi-note">Payment captured, allocation pending — investigate</div>
+        </div>
+        <div class="kpi-card ok"><span class="kpi-bar success"></span>
+          <div class="kpi-label">✅ Gold + payment OK</div>
+          <div class="kpi-value" id="kpi-gold_and_payment">—</div>
+          <div class="kpi-note">Both sides reconciled cleanly</div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="grid-template-columns:1fr 1fr;">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>Growth &amp; activity per day</h3>
+              <div class="desc">New registrations, bank validations, sells, redeems</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap"><canvas id="chart-activity"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>Money &amp; metal per day</h3>
+              <div class="desc">Cash collected (₹) vs. gold and silver grams</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap"><canvas id="chart-money"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Other checks</h3>
+            <div class="desc">Secondary counters from the same window</div>
+          </div>
+        </div>
+        <div class="kv-grid">
+          <div class="kv"><div class="kv-label">Users with address on file</div><div class="kv-value mono" id="kpi-users_with_address">—</div></div>
+          <div class="kv"><div class="kv-label">Gold value collected (₹)</div><div class="kv-value mono" id="kpi-gold_value">—</div></div>
+          <div class="kv"><div class="kv-label">Silver value collected (₹)</div><div class="kv-value mono" id="kpi-silver_value">—</div></div>
+          <div class="kv"><div class="kv-label">Diamond value collected (₹)</div><div class="kv-value mono" id="kpi-diamond_value">—</div></div>
+          <div class="kv"><div class="kv-label">Sell value (₹)</div><div class="kv-value mono" id="kpi-sell_value">—</div></div>
+          <div class="kv"><div class="kv-label">Redeem value (₹)</div><div class="kv-value mono" id="kpi-redeem_value">—</div></div>
+          <div class="kv"><div class="kv-label">Gold but no payment</div><div class="kv-value mono" id="kpi-gold_no_payment">—</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============================================================
+         BUSINESS OVERVIEW — MIS snapshot
+         Static reporting mirror (like an exported MIS sheet) rather than
+         the live ?days= APIs above. Wire loadBusinessOverview() to a real
+         reporting endpoint when one exists.
+         ============================================================= -->
+    <section class="view" id="view-business">
+      <div class="section-head">
+        <div>
+          <h2>Business Overview — MIS Snapshot</h2>
+          <div class="desc">Mirrors the Karatly Master MIS report · figures as of 31 Aug 2026, 21:00 IST</div>
+        </div>
+        <div class="flex gap-8">
+          <span class="badge muted">Source: Karatly Master MIS</span>
+          <button class="btn btn-sm" onclick="showToast('Exporting MIS to Excel…')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5"/><path d="M4 19h16"/></svg>
+            Export MIS (Excel)
+          </button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>Business Value (GMV)</h3><div class="desc">Gold, silver &amp; diamond order value — count and ₹ value by period</div></div>
+        </div>
+        <div class="grid-3">
+          <div class="kpi-card"><span class="kpi-bar gold"></span>
+            <div class="kpi-label">YTD</div>
+            <div class="flex" style="justify-content:space-between;align-items:flex-end;gap:10px;margin-top:8px;">
+              <div><div class="faint" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;">Count</div><div class="kpi-value" style="font-size:18px;">148,600</div></div>
+              <div style="text-align:right;"><div class="faint" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;">Value</div><div class="kpi-value" style="font-size:18px;color:var(--gold);">₹18.42 Cr</div></div>
+            </div>
+          </div>
+          <div class="kpi-card"><span class="kpi-bar gold"></span>
+            <div class="flex gap-6" style="align-items:center;">
+              <span class="kpi-label" style="margin:0;">MTD</span>
+              <select class="mis-select" title="Choose month for this MTD figure"><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option>Jun</option><option>Jul</option><option selected>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
+            </div>
+            <div class="flex" style="justify-content:space-between;align-items:flex-end;gap:10px;margin-top:8px;">
+              <div><div class="faint" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;">Count</div><div class="kpi-value" style="font-size:18px;">14,220</div></div>
+              <div style="text-align:right;"><div class="faint" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;">Value</div><div class="kpi-value" style="font-size:18px;color:var(--gold);">₹1.68 Cr</div></div>
+            </div>
+          </div>
+          <div class="kpi-card"><span class="kpi-bar gold"></span>
+            <div class="kpi-label">FTD</div>
+            <div class="flex" style="justify-content:space-between;align-items:flex-end;gap:10px;margin-top:8px;">
+              <div><div class="faint" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;">Count</div><div class="kpi-value" style="font-size:18px;">612</div></div>
+              <div style="text-align:right;"><div class="faint" style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;">Value</div><div class="kpi-value" style="font-size:18px;color:var(--gold);">₹7.4 L</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Transaction Count</h3><div class="desc">MTD order outcomes</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Transaction MTD count</th><th>Successful</th><th>Failed</th></tr></thead>
+            <tbody><tr><td class="num">14,220</td><td class="num">13,540</td><td><span class="badge critical">680</span></td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Users</h3><div class="desc">Unique vs. repeat vs. flagged usage</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Unique</th><th>Repeat user</th><th>Flagged (KYC rejected)</th></tr></thead>
+            <tbody><tr><td class="num">8,940</td><td class="num">5,280</td><td><a href="javascript:void(0)" onclick="document.getElementById('kyc-filter').value='rejected'; showView('users'); renderUsersTable();" class="badge critical" style="cursor:pointer;">41</a></td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div><h3>Metal Holdings</h3><div class="desc">Gold, silver &amp; diamond purchased on the platform — consolidated in one place</div></div></div>
+        <div class="table-wrap"><table class="data-table">
+          <thead><tr><th>Metal</th><th class="num">Grams purchased</th><th class="num">Value</th><th class="num">% of GMV</th></tr></thead>
+          <tbody>
+            <tr><td class="row-label">Gold</td><td class="num">612.4 g</td><td class="num">₹15.86 Cr</td><td class="num">86.1%</td></tr>
+            <tr><td class="row-label">Silver</td><td class="num">2,140.0 g</td><td class="num">₹1.88 Cr</td><td class="num">10.2%</td></tr>
+            <tr><td class="row-label">Diamond</td><td class="num">18.6 ct</td><td class="num">₹0.68 Cr</td><td class="num">3.7%</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="section-head" style="margin-top:6px;">
+        <div>
+          <h2>Buy vs. Sell</h2>
+          <div class="desc">Recent orders on each side of the book — click "View more" for the full user list</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Buy orders</h3><div class="desc">Customers purchasing metal</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Date</th><th>Customer</th><th>Mobile</th><th>Type</th><th>Metal</th><th class="num">Amount ₹</th><th class="num">Gold g</th><th>Payment</th><th>Order</th><th>Gateway</th><th>Augmont</th></tr></thead>
+            <tbody>
+              <tr onclick="showView('users')" style="cursor:pointer;">
+                <td class="dim">2026-08-25</td><td>Sai Kiran</td><td class="mono">9963710150</td><td>Buy</td><td>gold</td>
+                <td class="num">10,000</td><td class="num">0.6</td><td><span class="badge success">SUCCESS</span></td><td><span class="badge success">completed</span></td><td>CASHFREE</td>
+                <td class="addr-cell faint" title="Successfully bought 0.6 grams of gold @ 6740.28">Successfully bought 0.6 grams…</td>
+              </tr>
+              <tr onclick="showView('users')" style="cursor:pointer;">
+                <td class="dim">2026-08-22</td><td>Ravi Teja</td><td class="mono">9000112233</td><td>Buy</td><td>diamond</td>
+                <td class="num">37,200</td><td class="num">—</td><td><span class="badge success">SUCCESS</span></td><td><span class="badge success">completed</span></td><td>CASHFREE</td>
+                <td class="addr-cell faint" title="Successfully bought 0.12 grams of diamond @ 310000.00">Successfully bought 0.12 grams…</td>
+              </tr>
+              <tr onclick="showView('users')" style="cursor:pointer;">
+                <td class="dim">2026-08-18</td><td>Faisal Ahmed</td><td class="mono">9988776655</td><td>Buy</td><td>gold</td>
+                <td class="num">8,000</td><td class="num">—</td><td><span class="badge success">SUCCESS</span></td><td><span class="badge success">completed</span></td><td>CASHFREE</td>
+                <td class="addr-cell dim" title="Augmont allocation timed out — payment captured but gold not yet credited">⚠️ Augmont allocation timed out…</td>
+              </tr>
+              <tr onclick="showView('users')" style="cursor:pointer;">
+                <td class="dim">2026-08-29</td><td>Karthik Iyer</td><td class="mono">9812340098</td><td>Buy</td><td>gold</td>
+                <td class="num">6,000</td><td class="num">—</td><td><span class="badge critical">FAILED</span></td><td><span class="badge critical">failed</span></td><td>EASEBUZZ</td>
+                <td class="addr-cell dim" title="Payment gateway declined the transaction (insufficient funds)">⚠️ Payment gateway declined…</td>
+              </tr>
+            </tbody>
+          </table></div>
+          <div style="text-align:right;margin-top:12px;">
+            <a href="javascript:void(0)" onclick="showView('users')" class="btn btn-ghost btn-sm">
+              View more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Sell orders</h3><div class="desc">Customers liquidating metal holdings</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Date</th><th>Customer</th><th>Mobile</th><th>Type</th><th>Metal</th><th class="num">Amount ₹</th><th class="num">Gold g</th><th>Payment</th><th>Order</th><th>Gateway</th><th>Augmont</th></tr></thead>
+            <tbody>
+              <tr onclick="showView('users')" style="cursor:pointer;">
+                <td class="dim">2026-08-30</td><td>Ravi Teja</td><td class="mono">9000112233</td><td>Sell</td><td>gold</td>
+                <td class="num">38,000</td><td class="num">5.6</td><td><span class="badge success">SUCCESS</span></td><td><span class="badge success">completed</span></td><td>CASHFREE</td>
+                <td class="addr-cell faint" title="Successfully sold 5.6 grams of gold @ 6785.71">Successfully sold 5.6 grams…</td>
+              </tr>
+              <tr onclick="showView('users')" style="cursor:pointer;">
+                <td class="dim">2026-08-25</td><td>Sai Kiran</td><td class="mono">9963710150</td><td>Sell</td><td>gold</td>
+                <td class="num">12,000</td><td class="num">0.9</td><td><span class="badge success">SUCCESS</span></td><td><span class="badge success">completed</span></td><td>CASHFREE</td>
+                <td class="addr-cell faint" title="Successfully sold 0.9 grams of gold">Successfully sold 0.9 grams…</td>
+              </tr>
+              <tr onclick="showView('users')" style="cursor:pointer;">
+                <td class="dim">2026-08-12</td><td>Divya Sharma</td><td class="mono">9711223344</td><td>Sell</td><td>silver</td>
+                <td class="num">9,400</td><td class="num">—</td><td><span class="badge warning">PENDING</span></td><td><span class="badge warning">pending</span></td><td>CASHFREE</td>
+                <td class="addr-cell faint" title="Awaiting Augmont confirmation">Awaiting Augmont confirmation…</td>
+              </tr>
+              <tr onclick="showView('users')" style="cursor:pointer;">
+                <td class="dim">2026-08-06</td><td>Anjali Reddy</td><td class="mono">9550098712</td><td>Sell</td><td>gold</td>
+                <td class="num">4,200</td><td class="num">0.4</td><td><span class="badge success">SUCCESS</span></td><td><span class="badge success">completed</span></td><td>EASEBUZZ</td>
+                <td class="addr-cell faint" title="Successfully sold 0.4 grams of gold">Successfully sold 0.4 grams…</td>
+              </tr>
+            </tbody>
+          </table></div>
+          <div style="text-align:right;margin-top:12px;">
+            <a href="javascript:void(0)" onclick="showView('users')" class="btn btn-ghost btn-sm">
+              View more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Karatly Earn</h3><div class="desc">Commission Karatly earns from its metal vendors</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Metric</th><th class="num">Value</th><th class="num">% of GMV</th></tr></thead>
+            <tbody>
+              <tr><td class="row-label">Augmont commission</td><td class="num">₹11.2 L</td><td class="num">0.6%</td></tr>
+              <tr><td class="row-label">SafeGold commission</td><td class="num">₹7.4 L</td><td class="num">0.4%</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Karatly Payout</h3><div class="desc">Wallet points Karatly credits to customers</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Metric</th><th class="num">Value</th><th class="num">% of GMV</th></tr></thead>
+            <tbody>
+              <tr><td class="row-label">Wallet points credited</td><td class="num">₹5.6 L</td><td class="num">0.3%</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Customer Earn</h3><div class="desc">Wallet points and coupons earned by customers</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Metric</th><th class="num">Value</th><th class="num">% of GMV</th></tr></thead>
+            <tbody>
+              <tr><td class="row-label">Wallet points earned</td><td class="num">₹5.6 L</td><td class="num">0.3%</td></tr>
+              <tr><td class="row-label">Coupons redeemed value</td><td class="num">₹2.9 L</td><td class="num">0.16%</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Customer Burn</h3><div class="desc">Cashback redeemed by customers on the platform</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Metric</th><th class="num">Value</th><th class="num">% of GMV</th></tr></thead>
+            <tbody><tr><td class="row-label">Cashback redeemed</td><td class="num">₹3.2 L</td><td class="num">0.17%</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>MDR</h3><div class="desc">Merchant discount rate by payment mode</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>UPI</th><th>Debit card</th><th>Credit card</th><th>Netbanking</th></tr></thead>
+            <tbody><tr><td class="num">0.30%</td><td class="num">0.90%</td><td class="num">1.80%</td><td class="num">0.60%</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Profit</h3><div class="desc">Net platform profit</div></div></div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Value</th><th>%</th></tr></thead>
+            <tbody><tr><td class="num">₹47.2 L</td><td class="num">2.56%</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div><h3>Metal Balance (AUM)</h3><div class="desc">Gold, silver &amp; diamond value held in custody for customers — run-rate</div></div></div>
+        <div class="grid-3">
+          <div class="kpi-card"><span class="kpi-bar gold"></span>
+            <div class="kpi-label">YTD</div>
+            <div class="kpi-value" style="font-size:20px;color:var(--gold);margin-top:8px;">₹22.4 Cr</div>
+          </div>
+          <div class="kpi-card"><span class="kpi-bar gold"></span>
+            <div class="flex gap-6" style="align-items:center;">
+              <span class="kpi-label" style="margin:0;">MTD</span>
+              <select class="mis-select" title="Choose month for this MTD figure"><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option>Jun</option><option>Jul</option><option selected>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
+            </div>
+            <div class="kpi-value" style="font-size:20px;color:var(--gold);margin-top:8px;">₹1.92 Cr</div>
+          </div>
+          <div class="kpi-card"><span class="kpi-bar gold"></span>
+            <div class="kpi-label">FTD</div>
+            <div class="kpi-value" style="font-size:20px;color:var(--gold);margin-top:8px;">₹9.6 L</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="kv-row"><span class="k">Run rate</span><span class="v">₹2.1 Cr / month</span></div>
+          <div class="kv-row"><span class="k">Avg. holding per user</span><span class="v">₹18,240</span></div>
+          <div class="kv-row"><span class="k">Redemption rate</span><span class="v">3.9% of AUM / month</span></div>
+        </div>
+      </div>
+
+      <div class="section-head" style="margin-top:6px;">
+        <div>
+          <h2>Metal watchlist</h2>
+          <div class="desc">Margin and volume outliers by metal — from the last 30 days</div>
+        </div>
+        <a href="javascript:void(0)" onclick="showView('orders')" class="btn btn-ghost btn-sm">
+          Open Orders <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+      </div>
+      <div class="report-grid">
+        <div class="report-card" onclick="showView('orders')">
+          <div class="r-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+          <h4>High margin metal</h4>
+          <p>Best spread contribution this month.</p>
+          <div class="r-foot"><span class="badge success">Gold · 2.3% spread</span></div>
+        </div>
+        <div class="report-card" onclick="showView('orders')">
+          <div class="r-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+          <h4>Low margin metal</h4>
+          <p>Thinnest spread — review pricing.</p>
+          <div class="r-foot"><span class="badge warning">Silver · 0.6% spread</span></div>
+        </div>
+        <div class="report-card" onclick="showView('orders')">
+          <div class="r-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/></svg></div>
+          <h4>High volume metal</h4>
+          <p>Most purchased metal, last 30 days.</p>
+          <div class="r-foot"><span class="badge info">Gold · 612.4 g</span></div>
+        </div>
+        <div class="report-card" onclick="showView('orders')">
+          <div class="r-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg></div>
+          <h4>Zero volume metal</h4>
+          <p>No purchases in the last 30 days.</p>
+          <div class="r-foot"><span class="badge critical">Platinum · 0 g</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============================================================
+         ORDERS — Orders Summary + Recent Transactions
+         API: GET /api/v1/admin/dashboard/orders-summary?days=
+              GET /api/v1/admin/dashboard/recent-transactions?days=&limit=&status=
+         ============================================================= -->
+    <section class="view" id="view-orders">
+      <div class="section-head">
+        <div>
+          <h2>Orders</h2>
+          <div class="desc">Order counts, payment status and the underlying transactions</div>
+        </div>
+        <div class="chip-group" id="orders-range-chips">
+          <span class="chip" data-days="7" onclick="setOrdersRange(7)">7d</span>
+          <span class="chip active" data-days="30" onclick="setOrdersRange(30)">30d</span>
+          <span class="chip" data-days="90" onclick="setOrdersRange(90)">90d</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><span class="kpi-bar gold"></span>
+          <div class="kpi-label">Buy orders</div><div class="kpi-value" id="os-buy_count">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar gold"></span>
+          <div class="kpi-label">Sell orders</div><div class="kpi-value" id="os-sell_count">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar silver"></span>
+          <div class="kpi-label">Redeem orders</div><div class="kpi-value" id="os-redeem_count">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar info"></span>
+          <div class="kpi-label">Total orders</div><div class="kpi-value" id="os-total_orders">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar success"></span>
+          <div class="kpi-label">Successful</div><div class="kpi-value" id="os-order_success">—</div></div>
+
+        <div class="kpi-card"><span class="kpi-bar critical"></span>
+          <div class="kpi-label">Failed</div><div class="kpi-value" id="os-order_failed">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar warning"></span>
+          <div class="kpi-label">Pending</div><div class="kpi-value" id="os-order_pending">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar success"></span>
+          <div class="kpi-label">Payment paid</div><div class="kpi-value" id="os-payment_paid">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar critical"></span>
+          <div class="kpi-label">Payment failed</div><div class="kpi-value" id="os-payment_failed">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar warning"></span>
+          <div class="kpi-label">Payment pending</div><div class="kpi-value" id="os-payment_pending">—</div></div>
+
+        <div class="kpi-card"><span class="kpi-bar gold"></span>
+          <div class="kpi-label">Gold purchased</div><div class="kpi-value" id="os-augmont_purchased">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar diamond"></span>
+          <div class="kpi-label">Diamond purchased</div><div class="kpi-value" id="os-diamond_purchased">—</div></div>
+        <div class="kpi-card warn"><span class="kpi-bar warning"></span>
+          <div class="kpi-label">⚠️ Paid but no gold</div><div class="kpi-value" id="os-paid_no_gold">—</div></div>
+        <div class="kpi-card"><span class="kpi-bar gold"></span>
+          <div class="kpi-label">Total ₹ collected</div><div class="kpi-value" id="os-total_collected">—</div></div>
+      </div>
+
+      <div class="panel" style="padding:0;">
+        <div class="panel-head" style="padding:16px 16px 0;">
+          <div>
+            <h3>Transactions</h3>
+            <div class="desc">Underlying orders behind the counts above</div>
+          </div>
+          <div class="tabs" style="border-bottom:none; margin-bottom:0;">
+            <div class="tab active" data-txn-tab="ALL" onclick="setTransactionsTab('ALL')">Recent</div>
+            <div class="tab" data-txn-tab="SUCCESS" onclick="setTransactionsTab('SUCCESS')">Successful</div>
+            <div class="tab" data-txn-tab="FAILED" onclick="setTransactionsTab('FAILED')">Failures</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Date</th><th>Customer</th><th>Mobile</th><th>Type</th><th>Metal</th><th class="num">Amount ₹</th><th class="num">Gold g</th><th>Payment</th><th>Order</th><th>Gateway</th><th>Augmont</th></tr>
+            </thead>
+            <tbody id="transactions-tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty-note hidden" id="transactions-empty">No transactions in this window.</div>
+      </div>
+    </section>
+
+    <!-- =============================================================
+         3. USERS LIST
+         API: GET /api/v1/admin/dashboard/users?search=&kyc=
+         ============================================================= -->
+    <section class="view" id="view-users">
+      <div class="section-head">
+        <div>
+          <h2>Users</h2>
+          <div class="desc">Every registered user — click a row for the full profile</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="user-search" type="text" placeholder="Search name, mobile or email…" oninput="renderUsersTable()" />
+        </div>
+        <div class="select-box">
+          <select id="kyc-filter" onchange="renderUsersTable()">
+            <option value="">All KYC statuses</option>
+            <option value="verified">Verified</option>
+            <option value="pending">Pending</option>
+            <option value="rejected">Rejected</option>
+            <option value="incomplete">Incomplete</option>
+          </select>
+        </div>
+        <div class="result-count" id="user-result-count"></div>
+      </div>
+
+      <div class="panel" style="padding:0;">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th><th>Mobile</th><th>KYC</th><th>Bank</th><th>Address</th>
+                <th class="num">Buys ₹</th><th class="num">Gold g</th><th class="num">Silver g</th><th class="num">Diamond g</th>
+                <th class="num">Sells ₹</th><th class="num">Redeem</th><th>Last activity</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty-note hidden" id="users-empty">No users match this search / filter.</div>
+      </div>
+    </section>
+
+    <!-- =============================================================
+         4. USER DETAIL
+         API: GET /api/v1/admin/dashboard/users/{clientId}
+         ============================================================= -->
+    <section class="view" id="view-user-detail">
+      <div class="back-link" onclick="showView('users')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Back to users
+      </div>
+
+      <div class="profile-head">
+        <div class="av" id="ud-avatar">S</div>
+        <div>
+          <h2 id="ud-name">—</h2>
+          <div class="sub" id="ud-sub">—</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="profile" onclick="showUserTab('profile')">Profile</div>
+        <div class="tab" data-tab="orders" onclick="showUserTab('orders')">Orders</div>
+        <div class="tab" data-tab="banks" onclick="showUserTab('banks')">Banks</div>
+        <div class="tab" data-tab="addresses" onclick="showUserTab('addresses')">Addresses</div>
+      </div>
+
+      <div class="tab-pane active" id="tab-profile">
+        <div class="panel">
+          <div class="kv-grid" id="ud-profile-grid"></div>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-orders">
+        <div class="panel" style="padding:0;">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Order</th><th>Type</th><th>Metal</th><th class="num">Amount ₹</th><th class="num">Qty (g)</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody id="ud-orders-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-banks">
+        <div class="list-cards" id="ud-banks-list"></div>
+      </div>
+
+      <div class="tab-pane" id="tab-addresses">
+        <div class="list-cards" id="ud-addresses-list"></div>
+      </div>
+    </section>
+
+    <!-- =============================================================
+         5. ADMIN MANAGEMENT (super admin only)
+         ============================================================= -->
+    <section class="view" id="view-admin">
+      <div class="section-head">
+        <div>
+          <h2>Admin management</h2>
+          <div class="desc">Create admin accounts and reset passwords — super admin only</div>
+        </div>
+        <div class="flex gap-8">
+          <button class="btn btn-sm" onclick="openModal('modal-change-pass')">Change my password</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-admin')">+ Create admin</button>
+        </div>
+      </div>
+
+      <div class="panel" style="padding:0;">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Role</th><th>Created</th><th></th></tr></thead>
+            <tbody id="admins-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal: create admin -->
+<div class="modal-backdrop hidden" id="modal-create-admin">
+  <div class="modal">
+    <div class="modal-head"><h3>Create admin</h3><button class="modal-close" onclick="closeModal('modal-create-admin')">×</button></div>
+    <form onsubmit="return handleCreateAdmin(event)">
+      <div class="field"><label>Full name</label><input id="ca-name" required /></div>
+      <div class="field"><label>Phone number</label><input id="ca-phone" type="tel" required /></div>
+      <div class="field"><label>Email</label><input id="ca-email" type="email" required /></div>
+      <div class="field"><label>Password</label><input id="ca-pass" type="password" required /></div>
+      <div class="checkbox-row"><input type="checkbox" id="ca-super" /><label for="ca-super">Grant super admin access</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeModal('modal-create-admin')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create admin</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: reset a user's (admin's) password -->
+<div class="modal-backdrop hidden" id="modal-reset-pass">
+  <div class="modal">
+    <div class="modal-head"><h3>Reset password</h3><button class="modal-close" onclick="closeModal('modal-reset-pass')">×</button></div>
+    <form onsubmit="return handleResetPassword(event)">
+      <div class="field"><label>Phone number</label><input id="rp-phone" type="tel" required /></div>
+      <div class="field"><label>New password</label><input id="rp-pass" type="password" required /></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeModal('modal-reset-pass')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Reset password</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: change own password -->
+<div class="modal-backdrop hidden" id="modal-change-pass">
+  <div class="modal">
+    <div class="modal-head"><h3>Change my password</h3><button class="modal-close" onclick="closeModal('modal-change-pass')">×</button></div>
+    <form onsubmit="return handleChangePassword(event)">
+      <div class="field"><label>Current password</label><input id="cp-current" type="password" required /></div>
+      <div class="field"><label>New password</label><input id="cp-new" type="password" required /></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeModal('modal-change-pass')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change password</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==========================================================================
+   CONFIG — flip MOCK_MODE to false and point BASE_URL at the real backend
+   to wire this file straight into the Karatly dashboard API.
+   ========================================================================== */
+const MOCK_MODE = true;
+const BASE_URL = 'https://dashboard.karatly.net'; // or http://localhost:8082
+let authToken = null;   // spec says localStorage; kept in memory for this preview
+let currentAdmin = null;
+
+function authHeaders(){
+  return authToken ? { 'Authorization': 'Bearer ' + authToken } : {};
+}
+
+/* ---------------------------------------------------------------------
+   MOCK DATA — shaped exactly like the API responses in the spec
+   --------------------------------------------------------------------- */
+const MOCK_ADMIN_ACCOUNTS = [
+  { id:1, phoneNumber:'9999999999', password:'admin@123', fullName:'Super Admin', email:'admin@karatly.net', isSuperAdmin:true, createdAt:'2026-01-04' },
+  { id:2, phoneNumber:'9876543210', password:'ops@2026', fullName:'Priya Suresh', email:'priya@karatly.net', isSuperAdmin:false, createdAt:'2026-03-11' },
+  { id:3, phoneNumber:'9123456780', password:'ops@2026', fullName:'Arjun Menon', email:'arjun@karatly.net', isSuperAdmin:false, createdAt:'2026-05-20' },
+];
+
+function seedDaily(days){
+  const out = [];
+  const today = new Date('2026-08-31');
+  for(let i=days-1;i>=0;i--){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const seed = (d.getDate()*7 + d.getMonth()*3) % 11;
+    out.push({
+      date: d.toISOString().slice(0,10),
+      new_registrations: 6 + (seed % 9),
+      bank_validations: 4 + (seed % 6),
+      sells: 1 + (seed % 4),
+      sell_amount: (1 + seed % 4) * 4200,
+      redeems: seed % 3,
+      redeem_amount: (seed % 3) * 5200,
+      gold_grams: +((1.1 + (seed % 5) * 0.4).toFixed(2)),
+      gold_amount: Math.round((1.1 + (seed % 5) * 0.4) * 6700),
+      silver_grams: +((0.2 + (seed % 4) * 0.3).toFixed(2)),
+      silver_amount: Math.round((0.2 + (seed % 4) * 0.3) * 88),
+      diamond_grams: +((0.02 + (seed % 3) * 0.015).toFixed(3)),
+      diamond_amount: Math.round((0.02 + (seed % 3) * 0.015) * 310000),
+      cash_collected: 18000 + seed * 3100,
+      transactions: 8 + (seed % 10),
+    });
+  }
+  return out;
+}
+const MOCK_DAILY_90 = seedDaily(90);
+
+const MOCK_USERS = [
+  { client_id:'u-1001', name:'Sai Kiran', mobile:'9963710150', email:'sai.kiran@gmail.com', kyc_status:'verified', pan_verified:1, aadhaar_verified:1, bank_verified:1, registered_at:'2026-08-24 10:00:00', bank_accounts:2, primary_account:'****1234', delivery_addresses:1, primary_address:'Flat 302, Lakeview Residency, Gachibowli, Hyderabad, Telangana - 500032', buy_count:3, buy_amount:45000, gold_grams:2.4, silver_grams:0.0, diamond_grams:0.0, sell_count:1, sell_amount:12000, redeem_count:0, redeem_amount:0, last_activity:'2026-08-25 13:07:56', date_of_birth:'1994-02-11', city:'Hyderabad', state:'Telangana', pan_number:'ABCDE1234F', pan_name:'SAI KIRAN', augmont_unique_id:'AUG-88213', pincode:'500032', kyc_completed_at:'2026-08-24 11:20:00' },
+  { client_id:'u-1002', name:'Meera Nair', mobile:'9845123098', email:'meera.nair@yahoo.com', kyc_status:'pending', pan_verified:1, aadhaar_verified:0, bank_verified:0, registered_at:'2026-08-20 09:14:20', bank_accounts:0, primary_account:'—', delivery_addresses:0, primary_address:null, buy_count:1, buy_amount:5000, gold_grams:0.7, silver_grams:0.0, diamond_grams:0.0, sell_count:0, sell_amount:0, redeem_count:0, redeem_amount:0, last_activity:'2026-08-21 18:44:03', date_of_birth:'1998-07-02', city:'Kochi', state:'Kerala', pan_number:'BKPQR9087L', pan_name:'MEERA NAIR', augmont_unique_id:'AUG-77410', pincode:'682001', kyc_completed_at:null },
+  { client_id:'u-1003', name:'Ravi Teja', mobile:'9000112233', email:'ravi.teja@outlook.com', kyc_status:'verified', pan_verified:1, aadhaar_verified:1, bank_verified:1, registered_at:'2026-07-02 16:30:00', bank_accounts:1, primary_account:'****5567', delivery_addresses:2, primary_address:'12-4-88, MG Road, Vijayawada, Andhra Pradesh - 520010', buy_count:9, buy_amount:132000, gold_grams:9.8, silver_grams:4.1, diamond_grams:0.12, sell_count:3, sell_amount:38000, redeem_count:1, redeem_amount:15000, last_activity:'2026-08-30 08:12:41', date_of_birth:'1990-11-28', city:'Vijayawada', state:'Andhra Pradesh', pan_number:'CMTGH4521Z', pan_name:'RAVI TEJA', augmont_unique_id:'AUG-55021', pincode:'520010', kyc_completed_at:'2026-07-03 09:10:00' },
+  { client_id:'u-1004', name:'Anjali Reddy', mobile:'9550098712', email:'anjali.reddy@gmail.com', kyc_status:'rejected', pan_verified:1, aadhaar_verified:0, bank_verified:0, registered_at:'2026-08-11 11:02:55', bank_accounts:0, primary_account:'—', delivery_addresses:0, primary_address:null, buy_count:0, buy_amount:0, gold_grams:0, silver_grams:0, diamond_grams:0.0, sell_count:0, sell_amount:0, redeem_count:0, redeem_amount:0, last_activity:'2026-08-12 09:00:00', date_of_birth:'2001-04-19', city:'Warangal', state:'Telangana', pan_number:'DPLNM7788Q', pan_name:'ANJALI REDDY', augmont_unique_id:'AUG-91002', pincode:'506002', kyc_completed_at:null },
+  { client_id:'u-1005', name:'Karthik Iyer', mobile:'9812340098', email:'karthik.iyer@gmail.com', kyc_status:'incomplete', pan_verified:0, aadhaar_verified:0, bank_verified:0, registered_at:'2026-08-29 07:40:12', bank_accounts:0, primary_account:'—', delivery_addresses:0, primary_address:null, buy_count:0, buy_amount:0, gold_grams:0, silver_grams:0, diamond_grams:0.0, sell_count:0, sell_amount:0, redeem_count:0, redeem_amount:0, last_activity:'2026-08-29 07:41:00', date_of_birth:'1996-09-05', city:'Chennai', state:'Tamil Nadu', pan_number:'—', pan_name:'—', augmont_unique_id:'—', pincode:'600001', kyc_completed_at:null },
+  { client_id:'u-1006', name:'Divya Sharma', mobile:'9711223344', email:'divya.sharma@gmail.com', kyc_status:'verified', pan_verified:1, aadhaar_verified:1, bank_verified:1, registered_at:'2026-05-15 14:22:10', bank_accounts:1, primary_account:'****7842', delivery_addresses:1, primary_address:'B-14, Vasant Vihar, New Delhi, Delhi - 110057', buy_count:14, buy_amount:210500, gold_grams:16.2, silver_grams:2.4, diamond_grams:0.35, sell_count:5, sell_amount:61000, redeem_count:2, redeem_amount:29000, last_activity:'2026-08-30 20:03:11', date_of_birth:'1988-01-30', city:'Delhi', state:'Delhi', pan_number:'EWQXC1029R', pan_name:'DIVYA SHARMA', augmont_unique_id:'AUG-40881', pincode:'110057', kyc_completed_at:'2026-05-16 08:00:00' },
+  { client_id:'u-1007', name:'Faisal Ahmed', mobile:'9988776655', email:'faisal.ahmed@gmail.com', kyc_status:'verified', pan_verified:1, aadhaar_verified:1, bank_verified:0, registered_at:'2026-06-22 12:00:00', bank_accounts:0, primary_account:'—', delivery_addresses:1, primary_address:'4th Cross, Indiranagar, Bengaluru, Karnataka - 560038', buy_count:2, buy_amount:8000, gold_grams:1.1, silver_grams:0.0, diamond_grams:0.0, sell_count:0, sell_amount:0, redeem_count:0, redeem_amount:0, last_activity:'2026-08-18 10:20:00', date_of_birth:'1993-12-14', city:'Bengaluru', state:'Karnataka', pan_number:'FTYAB3345V', pan_name:'FAISAL AHMED', augmont_unique_id:'AUG-63321', pincode:'560038', kyc_completed_at:'2026-06-23 14:12:00' },
+  { client_id:'u-1008', name:'Sneha Kulkarni', mobile:'9022334455', email:'sneha.k@gmail.com', kyc_status:'pending', pan_verified:0, aadhaar_verified:1, bank_verified:0, registered_at:'2026-08-27 17:11:00', bank_accounts:0, primary_account:'—', delivery_addresses:0, primary_address:null, buy_count:0, buy_amount:0, gold_grams:0, silver_grams:0, diamond_grams:0.0, sell_count:0, sell_amount:0, redeem_count:0, redeem_amount:0, last_activity:'2026-08-27 17:12:00', date_of_birth:'1999-03-22', city:'Pune', state:'Maharashtra', pan_number:'—', pan_name:'—', augmont_unique_id:'—', pincode:'411001', kyc_completed_at:null },
+];
+
+const MOCK_USER_DETAIL_EXTRA = {
+  'u-1001': {
+    orders:[
+      { order_id:'o-1', order_reference:'KTL-88041', merchant_transaction_id:'KTL-88041-MT', order_type:'digital_purchase', order_status:'completed', augmont_txn_id:'AGX-9910', amount:20000, subtotal_amount:19400, tax_amount:600, metal_type:'gold', quantity:1.4, tracking_number:null, shipping_address:null, order_date:'2026-08-10 11:20:00' },
+      { order_id:'o-2', order_reference:'KTL-88090', merchant_transaction_id:'KTL-88090-MT', order_type:'digital_purchase', order_status:'completed', augmont_txn_id:'AGX-9944', amount:25000, subtotal_amount:24300, tax_amount:700, metal_type:'gold', quantity:1.0, tracking_number:null, shipping_address:null, order_date:'2026-08-20 09:05:00' },
+      { order_id:'o-3', order_reference:'KTL-88190', merchant_transaction_id:'KTL-88190-MT', order_type:'digital_sell', order_status:'completed', augmont_txn_id:'AGX-9990', amount:12000, subtotal_amount:12000, tax_amount:0, metal_type:'gold', quantity:0.9, tracking_number:null, shipping_address:null, order_date:'2026-08-25 13:07:56' },
+    ],
+    banks:[
+      { bank_account_id:'ba-1', provider_bank_id:'HDFC-1234', account_holder_name:'Sai Kiran', account_number:'****1234', ifsc_code:'HDFC0001234', status:'active', is_primary:1, provider:'AUGMONT', created_at:'2026-08-24 10:05:00' },
+      { bank_account_id:'ba-2', provider_bank_id:'ICIC-9087', account_holder_name:'Sai Kiran', account_number:'****9087', ifsc_code:'ICIC0004521', status:'active', is_primary:0, provider:'AUGMONT', created_at:'2026-08-26 12:00:00' },
+    ],
+    addresses:[
+      { address_id:'ad-1', name:'Sai Kiran', mobile_number:'9963710150', email:'sai.kiran@gmail.com', address_line:'Flat 302, Lakeview Residency, Gachibowli', city:'Hyderabad', state:'Telangana', pincode:'500032', country:'India', address_source:'AADHAAR', is_primary:1, created_at:'2026-08-24 10:10:00' },
+    ],
+  },
+  'u-1003': {
+    orders:[
+      { order_id:'o-4', order_reference:'KTL-87710', merchant_transaction_id:'KTL-87710-MT', order_type:'digital_purchase', order_status:'completed', augmont_txn_id:'AGX-8801', amount:37200, subtotal_amount:36000, tax_amount:1200, metal_type:'diamond', quantity:0.12, tracking_number:null, shipping_address:null, order_date:'2026-08-15 10:45:00' },
+      { order_id:'o-5', order_reference:'KTL-87990', merchant_transaction_id:'KTL-87990-MT', order_type:'digital_purchase', order_status:'completed', augmont_txn_id:'AGX-8850', amount:60000, subtotal_amount:58200, tax_amount:1800, metal_type:'gold', quantity:8.9, tracking_number:null, shipping_address:null, order_date:'2026-08-22 08:30:00' },
+      { order_id:'o-6', order_reference:'KTL-87610', merchant_transaction_id:'KTL-87610-MT', order_type:'physical_redemption', order_status:'completed', augmont_txn_id:'AGX-8790', amount:15000, subtotal_amount:15000, tax_amount:0, metal_type:'gold', quantity:2.0, tracking_number:'IND9988771122', shipping_address:'12-4-88, MG Road, Vijayawada, Andhra Pradesh - 520010', order_date:'2026-08-05 09:30:00' },
+    ],
+    banks:[
+      { bank_account_id:'ba-3', provider_bank_id:'SBI-5567', account_holder_name:'Ravi Teja', account_number:'****5567', ifsc_code:'SBIN0005567', status:'active', is_primary:1, provider:'AUGMONT', created_at:'2026-07-02 16:45:00' },
+    ],
+    addresses:[
+      { address_id:'ad-2', name:'Ravi Teja', mobile_number:'9000112233', email:'ravi.teja@outlook.com', address_line:'12-4-88, MG Road', city:'Vijayawada', state:'Andhra Pradesh', pincode:'520010', country:'India', address_source:'MANUAL', is_primary:1, created_at:'2026-07-02 16:40:00' },
+      { address_id:'ad-3', name:'Ravi Teja', mobile_number:'9000112233', email:'ravi.teja@outlook.com', address_line:'Plot 9, Kanuru', city:'Vijayawada', state:'Andhra Pradesh', pincode:'520007', country:'India', address_source:'AADHAAR', is_primary:0, created_at:'2026-07-15 11:00:00' },
+    ],
+  },
+};
+function getUserDetailExtra(client_id){
+  return MOCK_USER_DETAIL_EXTRA[client_id] || { orders:[], banks:[], addresses:[] };
+}
+
+const MOCK_TRANSACTIONS = [
+  { order_id:'9a6a242a-1', order_reference:'KARATLY-CF-2026082513075119b514', merchant_transaction_id:'KARATLY-CF-2026082513075119b514', order_type:'digital_purchase', order_status:'completed', augmont_txn_id:'F48692178755714309101259403', client_name:'Sai Kiran', client_mobile:'9963710150', metal_type:'gold', amount:10000, payment_status:'SUCCESS', payment_gateway:'CASHFREE', payment_id:'6317096865', rrn:'623782166230', augmont_quantity:0.6, gold_balance_after:'2.4000', silver_balance_after:'0.0000', augmont_invoice:'INV-88041', tax_amount:'300.00', augmont_message:'Successfully bought 0.6 grams of gold @ 6740.28', augmont_error:null, order_date:'2026-08-25 13:07:56' },
+  { order_id:'9a6a242a-2', order_reference:'KARATLY-CF-2026083008124188aa02', merchant_transaction_id:'KARATLY-CF-2026083008124188aa02', order_type:'digital_sell', order_status:'completed', augmont_txn_id:'F48692178755714309101259512', client_name:'Ravi Teja', client_mobile:'9000112233', metal_type:'gold', amount:38000, payment_status:'SUCCESS', payment_gateway:'CASHFREE', payment_id:'6317096912', rrn:'623782166344', augmont_quantity:5.6, gold_balance_after:'4.2000', silver_balance_after:'4.1000', augmont_invoice:'INV-87990', tax_amount:'0.00', augmont_message:'Successfully sold 5.6 grams of gold @ 6785.71', augmont_error:null, order_date:'2026-08-30 08:12:41' },
+  { order_id:'9a6a242a-3', order_reference:'KARATLY-EB-2026082916300077f091', merchant_transaction_id:'KARATLY-EB-2026082916300077f091', order_type:'digital_purchase', order_status:'failed', augmont_txn_id:'', client_name:'Karthik Iyer', client_mobile:'9812340098', metal_type:'gold', amount:6000, payment_status:'FAILED', payment_gateway:'EASEBUZZ', payment_id:'6317096944', rrn:null, augmont_quantity:0, gold_balance_after:null, silver_balance_after:null, augmont_invoice:null, tax_amount:'0.00', augmont_message:null, augmont_error:'Payment gateway declined the transaction (insufficient funds)', order_date:'2026-08-29 16:30:00' },
+  { order_id:'9a6a242a-4', order_reference:'KARATLY-CF-2026082210450012ab77', merchant_transaction_id:'KARATLY-CF-2026082210450012ab77', order_type:'digital_purchase', order_status:'completed', augmont_txn_id:'F48692178755714309101260011', client_name:'Ravi Teja', client_mobile:'9000112233', metal_type:'diamond', amount:37200, payment_status:'SUCCESS', payment_gateway:'CASHFREE', payment_id:'6317097001', rrn:'623782166501', augmont_quantity:0.12, gold_balance_after:'8.9000', silver_balance_after:'4.1000', augmont_invoice:'INV-87710', tax_amount:'1200.00', augmont_message:'Successfully bought 0.12 grams of diamond @ 310000.00', augmont_error:null, order_date:'2026-08-15 10:45:00' },
+  { order_id:'9a6a242a-5', order_reference:'KARATLY-CF-2026083020031198cd44', merchant_transaction_id:'KARATLY-CF-2026083020031198cd44', order_type:'digital_purchase', order_status:'pending', augmont_txn_id:'', client_name:'Divya Sharma', client_mobile:'9711223344', metal_type:'silver', amount:9000, payment_status:'PENDING', payment_gateway:'CASHFREE', payment_id:'6317097055', rrn:null, augmont_quantity:0, gold_balance_after:null, silver_balance_after:null, augmont_invoice:null, tax_amount:'0.00', augmont_message:null, augmont_error:null, order_date:'2026-08-30 20:03:11' },
+  { order_id:'9a6a242a-6', order_reference:'KARATLY-EB-2026082718440033ef19', merchant_transaction_id:'KARATLY-EB-2026082718440033ef19', order_type:'physical_redemption', order_status:'completed', augmont_txn_id:'F48692178755714309101260255', client_name:'Divya Sharma', client_mobile:'9711223344', metal_type:'gold', amount:29000, payment_status:'SUCCESS', payment_gateway:'EASEBUZZ', payment_id:'6317097102', rrn:'623782166670', augmont_quantity:2.0, gold_balance_after:'14.2000', silver_balance_after:'2.4000', augmont_invoice:'INV-87200', tax_amount:'0.00', augmont_message:'Redemption dispatched for 2.0 grams of gold', augmont_error:null, order_date:'2026-08-28 09:15:00' },
+  { order_id:'9a6a242a-7', order_reference:'KARATLY-CF-2026081810200087bb31', merchant_transaction_id:'KARATLY-CF-2026081810200087bb31', order_type:'digital_purchase', order_status:'completed', augmont_txn_id:'', client_name:'Faisal Ahmed', client_mobile:'9988776655', metal_type:'gold', amount:8000, payment_status:'SUCCESS', payment_gateway:'CASHFREE', payment_id:'6317097166', rrn:'623782166781', augmont_quantity:0, gold_balance_after:null, silver_balance_after:null, augmont_invoice:null, tax_amount:'240.00', augmont_message:null, augmont_error:'Augmont allocation timed out — payment captured but gold not yet credited', order_date:'2026-08-18 10:20:00' },
+  { order_id:'9a6a242a-8', order_reference:'KARATLY-CF-2026082709110044cc02', merchant_transaction_id:'KARATLY-CF-2026082709110044cc02', order_type:'digital_purchase', order_status:'failed', augmont_txn_id:'', client_name:'Sneha Kulkarni', client_mobile:'9022334455', metal_type:'silver', amount:3000, payment_status:'FAILED', payment_gateway:'CASHFREE', payment_id:'6317097210', rrn:null, augmont_quantity:0, gold_balance_after:null, silver_balance_after:null, augmont_invoice:null, tax_amount:'0.00', augmont_message:null, augmont_error:'Card declined by issuing bank', order_date:'2026-08-27 09:11:00' },
+];
+const ORDER_TYPE_LABEL = { digital_purchase:'Buy', digital_sell:'Sell', physical_redemption:'Redeem' };
+
+/* ---------------------------------------------------------------------
+   FETCH WRAPPERS — real calls when MOCK_MODE=false
+   --------------------------------------------------------------------- */
+async function apiLogin(phoneNumber, password){
+  if(MOCK_MODE){
+    const found = MOCK_ADMIN_ACCOUNTS.find(a => a.phoneNumber === phoneNumber && a.password === password);
+    if(!found) throw new Error('Invalid credentials');
+    return { token:'mock.' + found.id + '.' + Date.now(), admin:{ id:found.id, phoneNumber:found.phoneNumber, fullName:found.fullName, email:found.email, isSuperAdmin:found.isSuperAdmin } };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/auth/login', {
+    method:'POST', headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ phoneNumber, password })
+  });
+  if(!res.ok) throw new Error('Invalid credentials');
+  return res.json();
+}
+
+async function apiOverview(days){
+  if(MOCK_MODE){
+    const daily = MOCK_DAILY_90.slice(MOCK_DAILY_90.length - days);
+    const sum = (key) => daily.reduce((a,d)=>a + (d[key]||0), 0);
+    const kpis = {
+      total_users: MOCK_USERS.length * 154,
+      kyc_completed: Math.round(MOCK_USERS.filter(u=>u.kyc_status==='verified').length * 154 * 0.98),
+      bank_validated: Math.round(MOCK_USERS.filter(u=>u.bank_verified).length * 154 * 0.95),
+      users_with_address: Math.round(MOCK_USERS.filter(u=>u.delivery_addresses>0).length * 154 * 0.9),
+      total_collected: sum('cash_collected'),
+      gold_grams: +sum('gold_grams').toFixed(2),
+      silver_grams: +sum('silver_grams').toFixed(2),
+      diamond_grams: +sum('diamond_grams').toFixed(3),
+      gold_value: sum('gold_amount'),
+      silver_value: sum('silver_amount'),
+      diamond_value: sum('diamond_amount'),
+      sell_count: sum('sells'),
+      sell_value: sum('sell_amount'),
+      redeem_count: sum('redeems'),
+      redeem_value: sum('redeem_amount'),
+      paid_no_gold: Math.max(1, Math.round(days/20)),
+      gold_no_payment: Math.max(0, Math.round(days/45)),
+      gold_and_payment: sum('transactions') - Math.max(1, Math.round(days/20)),
+    };
+    return { kpis, daily };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/dashboard/overview?days=' + days, { headers: authHeaders() });
+  if(res.status===401) return handleUnauthorized();
+  return res.json();
+}
+
+async function apiOrdersSummary(days){
+  if(MOCK_MODE){
+    const daily = MOCK_DAILY_90.slice(MOCK_DAILY_90.length - days);
+    const sum = (key) => daily.reduce((a,d)=>a + (d[key]||0), 0);
+    const buy_count = sum('transactions') - sum('sells') - sum('redeems');
+    const total_orders = sum('transactions');
+    const order_failed = Math.max(2, Math.round(days/6));
+    const order_pending = Math.max(3, Math.round(days/5));
+    const order_success = total_orders - order_failed - order_pending;
+    return {
+      buy_count, sell_count: sum('sells'), redeem_count: sum('redeems'), total_orders,
+      order_success, order_failed, order_pending,
+      payment_paid: order_success + Math.round(order_pending*0.4),
+      payment_failed: order_failed,
+      payment_pending: Math.round(order_pending*0.6),
+      augmont_purchased: order_success,
+      diamond_purchased: Math.max(1, Math.round(days/18)),
+      paid_no_gold: Math.max(1, Math.round(days/20)),
+      total_collected: sum('cash_collected'),
+    };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/dashboard/orders-summary?days=' + days, { headers: authHeaders() });
+  if(res.status===401) return handleUnauthorized();
+  return res.json();
+}
+
+async function apiRecentTransactions(days, limit, status){
+  if(MOCK_MODE){
+    let list = MOCK_TRANSACTIONS;
+    if(status && status !== 'ALL') list = list.filter(t => t.payment_status === status);
+    return { transactions: list.slice(0, limit) };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/dashboard/recent-transactions?days=' + days + '&limit=' + limit + '&status=' + status, { headers: authHeaders() });
+  if(res.status===401) return handleUnauthorized();
+  return res.json();
+}
+
+async function apiUsers(search, kyc){
+  if(MOCK_MODE){
+    let list = MOCK_USERS;
+    if(search){
+      const s = search.toLowerCase();
+      list = list.filter(u => u.name.toLowerCase().includes(s) || u.mobile.includes(s) || u.email.toLowerCase().includes(s));
+    }
+    if(kyc) list = list.filter(u => u.kyc_status === kyc);
+    return { users: list };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/dashboard/users?search=' + encodeURIComponent(search||'') + '&kyc=' + (kyc||''), { headers: authHeaders() });
+  if(res.status===401) return handleUnauthorized();
+  return res.json();
+}
+
+async function apiUserDetail(client_id){
+  if(MOCK_MODE){
+    const profile = MOCK_USERS.find(u => u.client_id === client_id);
+    const extra = getUserDetailExtra(client_id);
+    return { profile, orders: extra.orders, banks: extra.banks, addresses: extra.addresses };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/dashboard/users/' + client_id, { headers: authHeaders() });
+  if(res.status===401) return handleUnauthorized();
+  return res.json();
+}
+
+function handleUnauthorized(){ handleLogout(); throw new Error('Session expired'); }
+
+/* ---------------------------------------------------------------------
+   AUTH FLOW
+   --------------------------------------------------------------------- */
+/* Login is skipped in this preview — the dashboard opens straight in.
+   To bring auth back: restore the login markup, call apiLogin() on
+   submit, and gate #app-shell on a successful response as before. */
+async function initSession(){
+  const data = await apiLogin('9999999999', 'admin@123'); // mock super admin
+  authToken = data.token;
+  currentAdmin = data.admin;
+  document.getElementById('who-name').textContent = currentAdmin.fullName;
+  document.getElementById('who-role').textContent = currentAdmin.isSuperAdmin ? 'Super admin' : 'Admin';
+  document.getElementById('who-av').textContent = currentAdmin.fullName.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('nav-admin').style.display = currentAdmin.isSuperAdmin ? 'flex' : 'none';
+  showView('overview');
+  loadOverview();
+  loadOrdersSummary();
+  loadUsers();
+  if(currentAdmin.isSuperAdmin) renderAdminsTable();
+}
+initSession();
+
+function handleLogout(){
+  authToken = null; currentAdmin = null;
+  showToast('Logged out (demo has no login screen — refresh to sign back in)');
+}
+
+/* ---------------------------------------------------------------------
+   NAVIGATION
+   --------------------------------------------------------------------- */
+const VIEW_META = {
+  overview: { title:'Dashboard overview', desc:'Money collected, gold & silver purchased, and user growth' },
+  business: { title:'Business Overview', desc:'MIS snapshot — GMV, metal holdings, earn/burn and profit' },
+  orders: { title:'Orders', desc:'Order counts, payment status and the underlying transactions' },
+  users: { title:'Users', desc:'Search and drill into every registered user' },
+  'user-detail': { title:'User detail', desc:'Profile, orders, banks and addresses' },
+  admin: { title:'Admin management', desc:'Create admin accounts and reset passwords — super admin only' },
+};
+function showView(id){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const nav = document.querySelector('.nav-item[data-nav="' + id + '"]');
+  if(nav) nav.classList.add('active');
+  const meta = VIEW_META[id];
+  if(meta){ document.getElementById('topbar-title').textContent = meta.title; document.getElementById('topbar-desc').textContent = meta.desc; }
+}
+
+/* ---------------------------------------------------------------------
+   OVERVIEW
+   --------------------------------------------------------------------- */
+let currentDays = 30;
+let chartActivity, chartMoney;
+const inr = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+const num = (n) => Number(n).toLocaleString('en-IN');
+
+function setRange(days){
+  currentDays = days;
+  document.querySelectorAll('#range-chips .chip').forEach(c => c.classList.toggle('active', +c.dataset.days === days));
+  loadOverview();
+}
+
+async function loadOverview(){
+  const data = await apiOverview(currentDays);
+  const k = data.kpis;
+  document.getElementById('kpi-total_collected').textContent = inr(k.total_collected);
+  document.getElementById('kpi-gold_grams').textContent = k.gold_grams.toFixed(2) + ' g';
+  document.getElementById('kpi-silver_grams').textContent = k.silver_grams.toFixed(2) + ' g';
+  document.getElementById('kpi-diamond_grams').textContent = k.diamond_grams.toFixed(3) + ' g';
+  document.getElementById('kpi-total_users').textContent = num(k.total_users);
+  document.getElementById('kpi-kyc_completed').textContent = num(k.kyc_completed);
+  document.getElementById('kpi-bank_validated').textContent = num(k.bank_validated);
+  document.getElementById('kpi-sell_count').textContent = num(k.sell_count);
+  document.getElementById('kpi-redeem_count').textContent = num(k.redeem_count);
+  document.getElementById('kpi-paid_no_gold').textContent = num(k.paid_no_gold);
+  document.getElementById('kpi-gold_and_payment').textContent = num(k.gold_and_payment);
+  document.getElementById('kpi-users_with_address').textContent = num(k.users_with_address);
+  document.getElementById('kpi-gold_value').textContent = inr(k.gold_value);
+  document.getElementById('kpi-silver_value').textContent = inr(k.silver_value);
+  document.getElementById('kpi-diamond_value').textContent = inr(k.diamond_value);
+  document.getElementById('kpi-sell_value').textContent = inr(k.sell_value);
+  document.getElementById('kpi-redeem_value').textContent = inr(k.redeem_value);
+  document.getElementById('kpi-gold_no_payment').textContent = num(k.gold_no_payment);
+
+  const labelWindow = currentDays === 1 ? 'today' : 'last ' + currentDays + ' days';
+  document.getElementById('kpi-total_collected-note').textContent = labelWindow;
+  document.getElementById('kpi-gold_grams-note').textContent = labelWindow;
+  document.getElementById('kpi-silver_grams-note').textContent = labelWindow;
+  document.getElementById('kpi-diamond_grams-note').textContent = labelWindow;
+  document.getElementById('kpi-total_users-note').textContent = 'all time';
+  document.getElementById('kpi-kyc_completed-note').textContent = 'all time';
+  document.getElementById('kpi-bank_validated-note').textContent = 'all time';
+  document.getElementById('kpi-sell_count-note').textContent = labelWindow;
+  document.getElementById('kpi-redeem_count-note').textContent = labelWindow;
+
+  renderCharts(data.daily);
+}
+
+function renderCharts(daily){
+  const labels = daily.map(d => d.date.slice(5));
+  const gold = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim();
+  const silver = getComputedStyle(document.documentElement).getPropertyValue('--silver').trim();
+  const info = getComputedStyle(document.documentElement).getPropertyValue('--info').trim();
+  const success = getComputedStyle(document.documentElement).getPropertyValue('--success').trim();
+  const diamond = getComputedStyle(document.documentElement).getPropertyValue('--diamond').trim();
+
+  const ctxA = document.getElementById('chart-activity');
+  if(chartActivity) chartActivity.destroy();
+  chartActivity = new Chart(ctxA, {
+    type:'bar',
+    data:{ labels, datasets:[
+      { label:'New registrations', data:daily.map(d=>d.new_registrations), backgroundColor:info, borderRadius:3, maxBarThickness:14 },
+      { label:'Bank validations', data:daily.map(d=>d.bank_validations), backgroundColor:success, borderRadius:3, maxBarThickness:14 },
+      { label:'Sells', data:daily.map(d=>d.sells), backgroundColor:gold, borderRadius:3, maxBarThickness:14 },
+      { label:'Redeems', data:daily.map(d=>d.redeems), backgroundColor:silver, borderRadius:3, maxBarThickness:14 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:9, boxHeight:9, usePointStyle:true, font:{ size:10.5 } } } },
+      scales:{ x:{ grid:{ display:false }, ticks:{ font:{ size:10 }, maxRotation:0, autoSkip:true, maxTicksLimit:8 } }, y:{ grid:{ color:'#EEEAE0' }, ticks:{ font:{ size:10 } } } } }
+  });
+
+  const ctxM = document.getElementById('chart-money');
+  if(chartMoney) chartMoney.destroy();
+  chartMoney = new Chart(ctxM, {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'Cash collected (₹)', data:daily.map(d=>d.cash_collected), borderColor:gold, backgroundColor:gold+'22', fill:true, tension:.35, yAxisID:'y', pointRadius:0 },
+      { label:'Gold grams', data:daily.map(d=>d.gold_grams), borderColor:info, backgroundColor:'transparent', tension:.35, yAxisID:'y1', pointRadius:0 },
+      { label:'Silver grams', data:daily.map(d=>d.silver_grams), borderColor:silver, backgroundColor:'transparent', tension:.35, yAxisID:'y1', pointRadius:0 },
+      { label:'Diamond grams', data:daily.map(d=>d.diamond_grams), borderColor:diamond, backgroundColor:'transparent', tension:.35, yAxisID:'y1', pointRadius:0 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:9, boxHeight:9, usePointStyle:true, font:{ size:10.5 } } } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ font:{ size:10 }, maxRotation:0, autoSkip:true, maxTicksLimit:8 } },
+        y:{ position:'left', grid:{ color:'#EEEAE0' }, ticks:{ font:{ size:10 }, callback:v=>'₹'+v } },
+        y1:{ position:'right', grid:{ display:false }, ticks:{ font:{ size:10 } } }
+      } }
+  });
+}
+
+/* ---------------------------------------------------------------------
+   ORDERS — Orders Summary + Recent Transactions
+   --------------------------------------------------------------------- */
+let ordersDays = 30;
+let transactionsTab = 'ALL';
+
+function setOrdersRange(days){
+  ordersDays = days;
+  document.querySelectorAll('#orders-range-chips .chip').forEach(c => c.classList.toggle('active', +c.dataset.days === days));
+  loadOrdersSummary();
+  loadTransactions();
+}
+
+async function loadOrdersSummary(){
+  const s = await apiOrdersSummary(ordersDays);
+  document.getElementById('os-buy_count').textContent = num(s.buy_count);
+  document.getElementById('os-sell_count').textContent = num(s.sell_count);
+  document.getElementById('os-redeem_count').textContent = num(s.redeem_count);
+  document.getElementById('os-total_orders').textContent = num(s.total_orders);
+  document.getElementById('os-order_success').textContent = num(s.order_success);
+  document.getElementById('os-order_failed').textContent = num(s.order_failed);
+  document.getElementById('os-order_pending').textContent = num(s.order_pending);
+  document.getElementById('os-payment_paid').textContent = num(s.payment_paid);
+  document.getElementById('os-payment_failed').textContent = num(s.payment_failed);
+  document.getElementById('os-payment_pending').textContent = num(s.payment_pending);
+  document.getElementById('os-augmont_purchased').textContent = num(s.augmont_purchased);
+  document.getElementById('os-diamond_purchased').textContent = num(s.diamond_purchased);
+  document.getElementById('os-paid_no_gold').textContent = num(s.paid_no_gold);
+  document.getElementById('os-total_collected').textContent = inr(s.total_collected);
+  loadTransactions();
+}
+
+function setTransactionsTab(status){
+  transactionsTab = status;
+  document.querySelectorAll('[data-txn-tab]').forEach(t => t.classList.toggle('active', t.dataset.txnTab === status));
+  loadTransactions();
+}
+
+async function loadTransactions(){
+  const data = await apiRecentTransactions(ordersDays, 50, transactionsTab);
+  const list = data.transactions;
+  const payBadge = { SUCCESS:'success', FAILED:'critical', PENDING:'warning' };
+  const orderBadge = { completed:'success', failed:'critical', pending:'warning' };
+  document.getElementById('transactions-empty').classList.toggle('hidden', list.length>0);
+  document.getElementById('transactions-tbody').innerHTML = list.map(t => `
+    <tr style="cursor:default;">
+      <td class="dim">${t.order_date}</td>
+      <td>${t.client_name}</td>
+      <td class="mono">${t.client_mobile}</td>
+      <td>${ORDER_TYPE_LABEL[t.order_type] || t.order_type}</td>
+      <td>${t.metal_type}</td>
+      <td class="num">${inr(t.amount)}</td>
+      <td class="num">${t.augmont_quantity ? t.augmont_quantity : '—'}</td>
+      <td><span class="badge ${payBadge[t.payment_status]||'muted'}">${t.payment_status}</span></td>
+      <td><span class="badge ${orderBadge[t.order_status]||'muted'}">${t.order_status}</span></td>
+      <td>${t.payment_gateway}${t.augmont_txn_id ? '' : ' <span class="badge critical" title="Gold not purchased">no gold</span>'}</td>
+      <td class="addr-cell ${t.augmont_error ? 'dim' : 'faint'}" title="${t.augmont_error || t.augmont_message || ''}">${t.augmont_error ? '⚠️ '+t.augmont_error : (t.augmont_message || '—')}</td>
+    </tr>`).join('');
+}
+
+/* ---------------------------------------------------------------------
+   USERS LIST + DETAIL
+   --------------------------------------------------------------------- */
+let usersCache = [];
+async function loadUsers(){
+  const data = await apiUsers('', '');
+  usersCache = data.users;
+  renderUsersTable();
+}
+
+function kycBadge(status){
+  const map = { verified:'success', pending:'warning', rejected:'critical', incomplete:'muted' };
+  return '<span class="badge ' + (map[status]||'muted') + '">' + status + '</span>';
+}
+function yesNo(v){ return v ? '<span class="check yes">✓ Yes</span>' : '<span class="check no">✕ No</span>'; }
+
+async function renderUsersTable(){
+  const search = document.getElementById('user-search').value.trim();
+  const kyc = document.getElementById('kyc-filter').value;
+  const data = await apiUsers(search, kyc);
+  const list = data.users;
+  const tbody = document.getElementById('users-tbody');
+  document.getElementById('user-result-count').textContent = list.length + ' user' + (list.length===1?'':'s');
+  document.getElementById('users-empty').classList.toggle('hidden', list.length>0);
+  tbody.innerHTML = list.map(u => `
+    <tr onclick="openUserDetail('${u.client_id}')">
+      <td>${u.name}</td>
+      <td class="mono">${u.mobile}</td>
+      <td>${kycBadge(u.kyc_status)}</td>
+      <td>${u.bank_verified ? '<span class="badge success">Verified</span>' : '<span class="badge muted">—</span>'}</td>
+      <td class="addr-cell dim" title="${u.primary_address || 'No address on file'}">${u.primary_address || '—'}</td>
+      <td class="num">${inr(u.buy_amount)}</td>
+      <td class="num">${u.gold_grams.toFixed(2)}</td>
+      <td class="num">${u.silver_grams.toFixed(2)}</td>
+      <td class="num">${u.diamond_grams.toFixed(3)}</td>
+      <td class="num">${inr(u.sell_amount)}</td>
+      <td class="num">${u.redeem_count}</td>
+      <td class="dim">${u.last_activity}</td>
+    </tr>`).join('');
+}
+
+async function openUserDetail(client_id){
+  const data = await apiUserDetail(client_id);
+  const p = data.profile;
+  document.getElementById('ud-avatar').textContent = p.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('ud-name').textContent = p.name;
+  document.getElementById('ud-sub').textContent = p.mobile + ' · ' + p.email + ' · ' + kycBadge(p.kyc_status).replace(/<[^>]+>/g,'').trim();
+  document.getElementById('ud-sub').innerHTML = p.mobile + ' &middot; ' + p.email + ' &middot; ' + kycBadge(p.kyc_status);
+
+  document.getElementById('ud-profile-grid').innerHTML = `
+    <div class="kv"><div class="kv-label">Date of birth</div><div class="kv-value">${p.date_of_birth||'—'}</div></div>
+    <div class="kv"><div class="kv-label">City / State</div><div class="kv-value">${p.city||'—'}, ${p.state||'—'} ${p.pincode ? '- '+p.pincode : ''}</div></div>
+    <div class="kv"><div class="kv-label">Primary address</div><div class="kv-value">${p.primary_address||'—'}</div></div>
+    <div class="kv"><div class="kv-label">Registered</div><div class="kv-value mono">${p.registered_at}</div></div>
+    <div class="kv"><div class="kv-label">KYC completed</div><div class="kv-value mono">${p.kyc_completed_at||'—'}</div></div>
+    <div class="kv"><div class="kv-label">PAN verified</div><div class="kv-value">${yesNo(p.pan_verified)}</div></div>
+    <div class="kv"><div class="kv-label">Aadhaar verified</div><div class="kv-value">${yesNo(p.aadhaar_verified)}</div></div>
+    <div class="kv"><div class="kv-label">Bank verified</div><div class="kv-value">${yesNo(p.bank_verified)}</div></div>
+    <div class="kv"><div class="kv-label">PAN number</div><div class="kv-value mono">${p.pan_number||'—'}</div></div>
+    <div class="kv"><div class="kv-label">PAN name</div><div class="kv-value">${p.pan_name||'—'}</div></div>
+    <div class="kv"><div class="kv-label">Augmont ID</div><div class="kv-value mono">${p.augmont_unique_id||'—'}</div></div>
+    <div class="kv"><div class="kv-label">Bank accounts on file</div><div class="kv-value">${p.bank_accounts}</div></div>
+    <div class="kv"><div class="kv-label">Delivery addresses</div><div class="kv-value">${p.delivery_addresses}</div></div>
+    <div class="kv"><div class="kv-label">Last activity</div><div class="kv-value mono">${p.last_activity}</div></div>
+  `;
+
+  const statusMap = { completed:'success', pending:'warning', failed:'critical' };
+  document.getElementById('ud-orders-tbody').innerHTML = data.orders.length ? data.orders.map(o => `
+    <tr style="cursor:default;">
+      <td class="id-cell">${o.order_reference}</td>
+      <td>${ORDER_TYPE_LABEL[o.order_type] || o.order_type.replace('_',' ')}</td>
+      <td>${o.metal_type}</td>
+      <td class="num">${inr(o.amount)}</td>
+      <td class="num">${o.quantity}</td>
+      <td><span class="badge ${statusMap[o.order_status]||'muted'}">${o.order_status}</span></td>
+      <td class="dim">${o.order_date}${o.tracking_number ? '<br><span class="mono faint">Tracking '+o.tracking_number+'</span>' : ''}</td>
+    </tr>`).join('') : `<tr><td colspan="7" class="empty-note">No orders yet.</td></tr>`;
+
+  document.getElementById('ud-banks-list').innerHTML = data.banks.length ? data.banks.map(b => `
+    <div class="list-card">
+      <div>
+        <div class="lc-title">${b.account_holder_name} <span class="mono dim">${b.account_number}</span></div>
+        <div class="lc-sub">IFSC ${b.ifsc_code} · ${b.status} · ${b.provider||'—'} · added ${b.created_at||'—'}</div>
+      </div>
+      ${b.is_primary ? '<span class="badge info">Primary</span>' : ''}
+    </div>`).join('') : '<div class="empty-note">No bank accounts on file.</div>';
+
+  document.getElementById('ud-addresses-list').innerHTML = data.addresses.length ? data.addresses.map(a => `
+    <div class="list-card">
+      <div>
+        <div class="lc-title">${a.address_line}</div>
+        <div class="lc-sub">${a.city}, ${a.state} — ${a.pincode}, ${a.country||'India'}</div>
+      </div>
+      <div class="flex gap-6">
+        ${a.is_primary ? '<span class="badge info">Primary</span>' : ''}
+        <span class="badge muted">${a.address_source}</span>
+      </div>
+    </div>`).join('') : '<div class="empty-note">No delivery addresses on file.</div>';
+
+  showUserTab('profile');
+  showView('user-detail');
+}
+
+function showUserTab(tab){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+}
+
+/* ---------------------------------------------------------------------
+   ADMIN MANAGEMENT (super admin only)
+   --------------------------------------------------------------------- */
+function renderAdminsTable(){
+  document.getElementById('admins-tbody').innerHTML = MOCK_ADMIN_ACCOUNTS.map(a => `
+    <tr style="cursor:default;">
+      <td>${a.fullName}</td>
+      <td class="mono">${a.phoneNumber}</td>
+      <td class="dim">${a.email}</td>
+      <td>${a.isSuperAdmin ? '<span class="badge info">Super admin</span>' : '<span class="badge muted">Admin</span>'}</td>
+      <td class="dim">${a.createdAt}</td>
+      <td><button class="btn btn-sm" onclick="openResetFor('${a.phoneNumber}')">Reset password</button></td>
+    </tr>`).join('');
+}
+function openResetFor(phone){
+  document.getElementById('rp-phone').value = phone;
+  openModal('modal-reset-pass');
+}
+
+function openModal(id){ document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); document.querySelector('#'+id+' form')?.reset(); }
+
+async function handleCreateAdmin(e){
+  e.preventDefault();
+  const phoneNumber = document.getElementById('ca-phone').value.trim();
+  const fullName = document.getElementById('ca-name').value.trim();
+  const email = document.getElementById('ca-email').value.trim();
+  const password = document.getElementById('ca-pass').value;
+  const isSuperAdmin = document.getElementById('ca-super').checked;
+
+  if(MOCK_MODE){
+    MOCK_ADMIN_ACCOUNTS.push({ id: MOCK_ADMIN_ACCOUNTS.length+1, phoneNumber, fullName, email, password, isSuperAdmin, createdAt: new Date().toISOString().slice(0,10) });
+  } else {
+    await fetch(BASE_URL + '/api/v1/admin/auth/create-admin', { method:'POST', headers:{ 'Content-Type':'application/json', ...authHeaders() }, body: JSON.stringify({ phoneNumber, fullName, email, password, isSuperAdmin }) });
+  }
+  renderAdminsTable();
+  closeModal('modal-create-admin');
+  showToast('Admin account created');
+  return false;
+}
+
+async function handleResetPassword(e){
+  e.preventDefault();
+  const phoneNumber = document.getElementById('rp-phone').value.trim();
+  const newPassword = document.getElementById('rp-pass').value;
+  if(MOCK_MODE){
+    const acc = MOCK_ADMIN_ACCOUNTS.find(a => a.phoneNumber === phoneNumber);
+    if(acc) acc.password = newPassword;
+  } else {
+    await fetch(BASE_URL + '/api/v1/admin/auth/reset-password', { method:'POST', headers:{ 'Content-Type':'application/json', ...authHeaders() }, body: JSON.stringify({ phoneNumber, newPassword }) });
+  }
+  closeModal('modal-reset-pass');
+  showToast('Password reset for ' + phoneNumber);
+  return false;
+}
+
+async function handleChangePassword(e){
+  e.preventDefault();
+  const currentPassword = document.getElementById('cp-current').value;
+  const newPassword = document.getElementById('cp-new').value;
+  if(MOCK_MODE){
+    const acc = MOCK_ADMIN_ACCOUNTS.find(a => a.id === currentAdmin.id);
+    if(!acc || acc.password !== currentPassword){ showToast('Current password is incorrect'); return false; }
+    acc.password = newPassword;
+  } else {
+    await fetch(BASE_URL + '/api/v1/admin/auth/change-password', { method:'POST', headers:{ 'Content-Type':'application/json', ...authHeaders() }, body: JSON.stringify({ currentPassword, newPassword }) });
+  }
+  closeModal('modal-change-pass');
+  showToast('Password updated');
+  return false;
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+</script>
+</body>
+</html>
