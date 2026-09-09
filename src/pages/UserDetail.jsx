@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getUserDetail } from '../api/dashboardApi';
+import { getUserDetail, searchClients } from '../api/dashboardApi';
 import Badge from '../components/Badge';
+import FulfillmentStatus from '../components/FulfillmentStatus';
 import YesNo from '../components/YesNo';
+import { useToast } from '../context/ToastContext';
+import { useInlineRetry } from '../hooks/useInlineRetry';
 import { inr, kycBadgeVariant, ORDER_BADGE_VARIANT, ORDER_TYPE_LABEL } from '../utils/format';
 
 const TABS = [
   { key: 'profile', label: 'Profile' },
   { key: 'orders', label: 'Orders' },
+  { key: 'payments', label: 'Payments' },
   { key: 'banks', label: 'Banks' },
   { key: 'addresses', label: 'Addresses' },
 ];
@@ -15,8 +19,12 @@ const TABS = [
 export default function UserDetail() {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const showToast = useToast();
   const [data, setData] = useState(null);
   const [tab, setTab] = useState('profile');
+  const [payments, setPayments] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
+  const { handleRetry, isSending, isSent } = useInlineRetry();
 
   useEffect(() => {
     let cancelled = false;
@@ -32,6 +40,24 @@ export default function UserDetail() {
       cancelled = true;
     };
   }, [clientId]);
+
+  // Cashfree payments (with the gold_received / Retry signal) live behind
+  // POST /search, keyed by mobile — a different call from the orders tab's
+  // GET /users/{id}, so they're fetched separately once the profile resolves.
+  const mobile = data?.profile?.mobile;
+
+  const reloadPayments = (mobileNumber) => {
+    setPaymentsLoading(true);
+    searchClients(mobileNumber)
+      .then((res) => setPayments(res.cashfree_payments || []))
+      .catch((err) => showToast(err?.message || 'Failed to load payments'))
+      .finally(() => setPaymentsLoading(false));
+  };
+
+  useEffect(() => {
+    if (mobile) reloadPayments(mobile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobile]);
 
   if (!data || !data.profile) {
     return (
@@ -195,6 +221,43 @@ export default function UserDetail() {
                   <tr>
                     <td colSpan={7} className="empty-note">
                       No orders yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div className={`tab-pane${tab === 'payments' ? ' active' : ''}`}>
+        <div className="panel" style={{ padding: 0 }}>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Order</th>
+                  <th className="num">Amount ₹</th>
+                  <th>Payment</th>
+                  <th>Fulfillment</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.length ? (
+                  payments.map((pmt) => (
+                    <tr key={pmt.sabbpe_order_id} style={{ cursor: 'default' }}>
+                      <td className="dim">{pmt.created_at}</td>
+                      <td className="id-cell">{pmt.merchant_order_id || pmt.sabbpe_order_id}</td>
+                      <td className="num">{inr(pmt.order_amount)}</td>
+                      <FulfillmentStatus row={pmt} onRetry={handleRetry} sending={isSending(pmt)} sent={isSent(pmt)} />
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="empty-note">
+                      {paymentsLoading ? 'Loading…' : 'No Cashfree payments on file.'}
                     </td>
                   </tr>
                 )}

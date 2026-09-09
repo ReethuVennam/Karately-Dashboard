@@ -431,6 +431,10 @@ svg{ width:16px; height:16px; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
       <span>Orders</span>
     </div>
+    <div class="nav-item" data-nav="unfulfilled" onclick="showView('unfulfilled')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      <span>Fulfillment issues</span>
+    </div>
     <div class="nav-item" data-nav="users" onclick="showView('users')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 4.2 1.7"/><path d="M17 8l5 5M22 8l-5 5"/></svg>
       <span>Users</span>
@@ -936,8 +940,44 @@ svg{ width:16px; height:16px; }
     </section>
 
     <!-- =============================================================
+         FULFILLMENT ISSUES — paid on Cashfree but gold never credited
+         API: POST /api/v1/admin/dashboard/unfulfilled-cashfree
+         ============================================================= -->
+    <section class="view" id="view-unfulfilled">
+      <div class="section-head">
+        <div>
+          <h2>Fulfillment issues</h2>
+          <div class="desc">Cashfree payment succeeded but the Augmont gold purchase never completed — retry it from here</div>
+        </div>
+        <div class="flex gap-8">
+          <div class="chip-group" id="unfulfilled-status-chips">
+            <span class="chip active" data-status="ALL" onclick="setUnfulfilledStatus('ALL')">All</span>
+            <span class="chip" data-status="FAILED" onclick="setUnfulfilledStatus('FAILED')">Buy failed</span>
+            <span class="chip" data-status="PENDING" onclick="setUnfulfilledStatus('PENDING')">Buy never ran</span>
+          </div>
+          <div class="chip-group" id="unfulfilled-days-chips">
+            <span class="chip" data-days="30" onclick="setUnfulfilledDays(30)">30d</span>
+            <span class="chip active" data-days="90" onclick="setUnfulfilledDays(90)">90d</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="padding:0;">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Customer</th><th>Mobile</th><th>Order</th><th class="num">Amount ₹</th><th>Payment</th><th>Fulfillment</th><th></th></tr></thead>
+            <tbody id="unfulfilled-tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty-note hidden" id="unfulfilled-empty">Nothing stuck right now — every paid order has been fulfilled.</div>
+      </div>
+    </section>
+
+    <!-- =============================================================
          3. USERS LIST
          API: GET /api/v1/admin/dashboard/users?search=&kyc=
+         New: POST /api/v1/admin/dashboard/search — name/mobile/email/uniqueId
+              → profile + Cashfree payments + gold_received per order
          ============================================================= -->
     <section class="view" id="view-users">
       <div class="section-head">
@@ -950,7 +990,7 @@ svg{ width:16px; height:16px; }
       <div class="toolbar">
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input id="user-search" type="text" placeholder="Search name, mobile or email…" oninput="renderUsersTable()" />
+          <input id="user-search" type="text" placeholder="Search name, mobile, email or Augmont ID…" oninput="onUserSearchInput()" />
         </div>
         <div class="select-box">
           <select id="kyc-filter" onchange="renderUsersTable()">
@@ -964,21 +1004,26 @@ svg{ width:16px; height:16px; }
         <div class="result-count" id="user-result-count"></div>
       </div>
 
-      <div class="panel" style="padding:0;">
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Name</th><th>Mobile</th><th>KYC</th><th>Bank</th><th>Address</th>
-                <th class="num">Buys ₹</th><th class="num">Gold g</th><th class="num">Silver g</th><th class="num">Diamond g</th>
-                <th class="num">Sells ₹</th><th class="num">Redeem</th><th>Last activity</th>
-              </tr>
-            </thead>
-            <tbody id="users-tbody"></tbody>
-          </table>
+      <div id="users-browse-panel">
+        <div class="panel" style="padding:0;">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th><th>Mobile</th><th>KYC</th><th>Bank</th><th>Address</th>
+                  <th class="num">Buys ₹</th><th class="num">Gold g</th><th class="num">Silver g</th><th class="num">Diamond g</th>
+                  <th class="num">Sells ₹</th><th class="num">Redeem</th><th>Last activity</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-note hidden" id="users-empty">No users match this search / filter.</div>
         </div>
-        <div class="empty-note hidden" id="users-empty">No users match this search / filter.</div>
       </div>
+
+      <!-- Search-mode results: POST /search — profile card + Cashfree payments + Retry -->
+      <div id="users-search-panel" class="hidden"></div>
     </section>
 
     <!-- =============================================================
@@ -1108,6 +1153,34 @@ svg{ width:16px; height:16px; }
   </div>
 </div>
 
+<!-- Modal: retry a stuck gold/silver purchase (paid, gold not received) -->
+<div class="modal-backdrop hidden" id="modal-retry">
+  <div class="modal">
+    <div class="modal-head"><h3>Retry gold purchase</h3><button class="modal-close" onclick="closeModal('modal-retry')">×</button></div>
+    <div class="kv-row"><span class="k">Customer</span><span class="v" id="retry-customer">—</span></div>
+    <div class="kv-row"><span class="k">Order</span><span class="v" id="retry-order">—</span></div>
+    <div class="kv-row"><span class="k">Amount</span><span class="v" id="retry-amount">—</span></div>
+    <div class="field" style="margin-top:14px;margin-bottom:10px;">
+      <label>Metal</label>
+      <div class="select-box" style="width:100%;">
+        <select id="retry-metal" style="width:100%;" onchange="refreshRetryRate()">
+          <option value="gold">Gold</option>
+          <option value="silver">Silver</option>
+        </select>
+      </div>
+    </div>
+    <div class="kv-row"><span class="k">Live buy rate</span><span class="v" id="retry-rate">—</span></div>
+    <div style="text-align:right;margin-top:6px;">
+      <a href="javascript:void(0)" class="btn btn-ghost btn-sm" onclick="refreshRetryRate()">Refresh rate</a>
+    </div>
+    <div class="login-hint" style="margin-top:4px;">This calls Augmont's buy API for this customer right now — it moves real money and gold. Double-check the amount and rate before confirming.</div>
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="closeModal('modal-retry')">Cancel</button>
+      <button type="button" class="btn btn-primary" id="retry-confirm-btn" onclick="confirmRetry()">Confirm retry</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1217,6 +1290,15 @@ const MOCK_TRANSACTIONS = [
   { order_id:'9a6a242a-8', order_reference:'KARATLY-CF-2026082709110044cc02', merchant_transaction_id:'KARATLY-CF-2026082709110044cc02', order_type:'digital_purchase', order_status:'failed', augmont_txn_id:'', client_name:'Sneha Kulkarni', client_mobile:'9022334455', metal_type:'silver', amount:3000, payment_status:'FAILED', payment_gateway:'CASHFREE', payment_id:'6317097210', rrn:null, augmont_quantity:0, gold_balance_after:null, silver_balance_after:null, augmont_invoice:null, tax_amount:'0.00', augmont_message:null, augmont_error:'Card declined by issuing bank', order_date:'2026-08-27 09:11:00' },
 ];
 const ORDER_TYPE_LABEL = { digital_purchase:'Buy', digital_sell:'Sell', physical_redemption:'Redeem' };
+
+/* Shared by the Users search panel (POST /search) and the Fulfillment
+   Issues tab (POST /unfulfilled-cashfree) — mutated in place on a
+   successful retry so gold_received flips to 1 everywhere it's shown. */
+const MOCK_CASHFREE_PAYMENTS = [
+  { sabbpe_order_id:'Karatly2026082513075119b514', merchant_order_id:'KARATLY-CF-2026082513075119b514', customer_id:'u-1001', customer_name:'Sai Kiran', customer_mobile:'9963710150', order_amount:10000, order_status:'PAID', fulfillment_status:'FULFILLMENT_COMPLETED', payment_status:'SUCCESS', cf_payment_id:'6317096865', gold_received:1, provider_reference:'AUG-88213', created_at:'2026-08-25 13:07:56' },
+  { sabbpe_order_id:'Karatly2026090514300099ab21', merchant_order_id:'KARATLY-CF-2026090514300099ab21', customer_id:'u-1007', customer_name:'Faisal Ahmed', customer_mobile:'9988776655', order_amount:8000, order_status:'PAID', fulfillment_status:'FULFILLMENT_FAILED: Augmont allocation timed out', payment_status:'SUCCESS', cf_payment_id:'6317097166', gold_received:0, provider_reference:'AUG-63321', created_at:'2026-09-05 14:30:00' },
+  { sabbpe_order_id:'Karatly2026090110120044cd90', merchant_order_id:'KARATLY-CF-2026090110120044cd90', customer_id:'u-1003', customer_name:'Ravi Teja', customer_mobile:'9000112233', order_amount:15000, order_status:'PAID', fulfillment_status:null, payment_status:'SUCCESS', cf_payment_id:'6317097400', gold_received:0, provider_reference:'AUG-55021', created_at:'2026-09-01 10:12:00' },
+];
 
 /* ---------------------------------------------------------------------
    FETCH WRAPPERS — real calls when MOCK_MODE=false
@@ -1329,6 +1411,72 @@ async function apiUserDetail(client_id){
   return res.json();
 }
 
+async function apiSearch(term){
+  if(MOCK_MODE){
+    const t = term.toLowerCase();
+    const clients = MOCK_USERS.filter(u =>
+      u.name.toLowerCase().includes(t) || u.mobile.includes(t) ||
+      u.email.toLowerCase().includes(t) || (u.augmont_unique_id||'').toLowerCase().includes(t)
+    ).map(u => ({
+      client_id:u.client_id, full_name:u.name, email:u.email, mobile:u.mobile,
+      unique_id:u.augmont_unique_id, pan_number:u.pan_number, kyc_status:u.kyc_status,
+      bank_verified:u.bank_verified, registered_at:u.registered_at,
+    }));
+    const ids = new Set(clients.map(c => c.client_id));
+    const cashfree_payments = MOCK_CASHFREE_PAYMENTS.filter(p => ids.has(p.customer_id));
+    return { clients, cashfree_payments };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/dashboard/search', {
+    method:'POST', headers:{ 'Content-Type':'application/json', ...authHeaders() },
+    body: JSON.stringify({ term })
+  });
+  if(res.status===401) return handleUnauthorized();
+  return res.json();
+}
+
+async function apiUnfulfilled(days, status){
+  if(MOCK_MODE){
+    let list = MOCK_CASHFREE_PAYMENTS.filter(p => !p.gold_received);
+    if(status === 'FAILED') list = list.filter(p => (p.fulfillment_status||'').toUpperCase().startsWith('FULFILLMENT_FAILED'));
+    if(status === 'PENDING') list = list.filter(p => !p.fulfillment_status);
+    return { orders: list };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/dashboard/unfulfilled-cashfree', {
+    method:'POST', headers:{ 'Content-Type':'application/json', ...authHeaders() },
+    body: JSON.stringify({ days, status })
+  });
+  if(res.status===401) return handleUnauthorized();
+  return res.json();
+}
+
+async function apiRatesLive(){
+  if(MOCK_MODE){
+    await new Promise(r => setTimeout(r, 250));
+    return { rates: { status:'success', payload:{ result:{ data:{
+      rates:{ gBuy:7450.00, gSell:7400.00, sBuy:92.50, sSell:91.80 },
+      blockId:'mock-block-' + Date.now(),
+    } } } } };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/dashboard/rates/live', {
+    method:'POST', headers:{ 'Content-Type':'application/json', ...authHeaders() }, body:'{}'
+  });
+  if(res.status===401) return handleUnauthorized();
+  return res.json();
+}
+
+async function apiBuyCreate(payload){
+  if(MOCK_MODE){
+    await new Promise(r => setTimeout(r, 700));
+    return { result:{ status:'success', payload:{ message:'successfully bought', transactionId:'AUGBUY-MOCK-' + Date.now() } } };
+  }
+  const res = await fetch(BASE_URL + '/api/v1/admin/dashboard/buy/create', {
+    method:'POST', headers:{ 'Content-Type':'application/json', ...authHeaders() },
+    body: JSON.stringify(payload)
+  });
+  if(res.status===401) return handleUnauthorized();
+  return res.json();
+}
+
 function handleUnauthorized(){ handleLogout(); throw new Error('Session expired'); }
 
 /* ---------------------------------------------------------------------
@@ -1349,6 +1497,7 @@ async function initSession(){
   loadOverview();
   loadOrdersSummary();
   loadUsers();
+  loadUnfulfilled();
   if(currentAdmin.isSuperAdmin) renderAdminsTable();
 }
 initSession();
@@ -1365,6 +1514,7 @@ const VIEW_META = {
   overview: { title:'Dashboard overview', desc:'Money collected, gold & silver purchased, and user growth' },
   business: { title:'Business Overview', desc:'MIS snapshot — GMV, metal holdings, earn/burn and profit' },
   orders: { title:'Orders', desc:'Order counts, payment status and the underlying transactions' },
+  unfulfilled: { title:'Fulfillment issues', desc:'Paid on Cashfree but gold was never credited — retry the Augmont purchase' },
   users: { title:'Users', desc:'Search and drill into every registered user' },
   'user-detail': { title:'User detail', desc:'Profile, orders, banks and addresses' },
   admin: { title:'Admin management', desc:'Create admin accounts and reset passwords — super admin only' },
@@ -1533,6 +1683,54 @@ async function loadTransactions(){
 }
 
 /* ---------------------------------------------------------------------
+   FULFILLMENT ISSUES — paid but gold not received (POST /unfulfilled-cashfree)
+   --------------------------------------------------------------------- */
+let unfulfilledDays = 90;
+let unfulfilledStatus = 'ALL';
+let unfulfilledCache = [];
+
+function setUnfulfilledStatus(status){
+  unfulfilledStatus = status;
+  document.querySelectorAll('#unfulfilled-status-chips .chip').forEach(c => c.classList.toggle('active', c.dataset.status === status));
+  loadUnfulfilled();
+}
+function setUnfulfilledDays(days){
+  unfulfilledDays = days;
+  document.querySelectorAll('#unfulfilled-days-chips .chip').forEach(c => c.classList.toggle('active', +c.dataset.days === days));
+  loadUnfulfilled();
+}
+
+async function loadUnfulfilled(){
+  const data = await apiUnfulfilled(unfulfilledDays, unfulfilledStatus);
+  unfulfilledCache = data.orders || [];
+  document.getElementById('unfulfilled-empty').classList.toggle('hidden', unfulfilledCache.length > 0);
+  document.getElementById('unfulfilled-tbody').innerHTML = unfulfilledCache.map((o, i) => `
+    <tr style="cursor:default;">
+      <td class="dim">${o.created_at}</td>
+      <td>${o.customer_name}</td>
+      <td class="mono">${o.customer_mobile}</td>
+      <td class="id-cell">${o.merchant_order_id || o.sabbpe_order_id}</td>
+      <td class="num">${inr(o.order_amount)}</td>
+      ${fulfillmentCells(o, 'unfulfilled', i)}
+    </tr>`).join('');
+}
+
+/* Shared by the Fulfillment Issues table and the Users search-panel
+   payments table — renders the Payment + Fulfillment badges and the
+   Retry button (hidden once gold_received is true). */
+function fulfillmentCells(o, source, idx){
+  const payBadge = { SUCCESS:'success', FAILED:'critical', PENDING:'warning' };
+  const goldOk = !!o.gold_received;
+  const statusCell = goldOk
+    ? '<span class="badge success">Received</span>'
+    : (o.fulfillment_status ? `<span class="badge critical" title="${o.fulfillment_status}">Failed</span>` : '<span class="badge warning">Never ran</span>');
+  const actionCell = goldOk
+    ? '<span class="faint">—</span>'
+    : `<button class="btn btn-sm btn-primary" onclick="openRetryModal('${source}',${idx})">Retry</button>`;
+  return `<td><span class="badge ${payBadge[o.payment_status]||'muted'}">${o.payment_status}</span></td><td>${statusCell}</td><td>${actionCell}</td>`;
+}
+
+/* ---------------------------------------------------------------------
    USERS LIST + DETAIL
    --------------------------------------------------------------------- */
 let usersCache = [];
@@ -1571,6 +1769,68 @@ async function renderUsersTable(){
       <td class="num">${u.redeem_count}</td>
       <td class="dim">${u.last_activity}</td>
     </tr>`).join('');
+}
+
+/* ---------------------------------------------------------------------
+   USER SEARCH MODE — POST /search: profile + Cashfree payments + Retry
+   Kicks in once the search box has 3+ characters; browse table (above)
+   returns when it's cleared.
+   --------------------------------------------------------------------- */
+let searchDebounceTimer = null;
+let searchPaymentsCache = [];
+
+function onUserSearchInput(){
+  const term = document.getElementById('user-search').value.trim();
+  clearTimeout(searchDebounceTimer);
+  if(term.length < 3){
+    document.getElementById('users-search-panel').classList.add('hidden');
+    document.getElementById('users-browse-panel').classList.remove('hidden');
+    renderUsersTable();
+    return;
+  }
+  searchDebounceTimer = setTimeout(() => runUserSearch(term), 350);
+}
+
+async function runUserSearch(term){
+  const data = await apiSearch(term);
+  const clients = data.clients || [];
+  searchPaymentsCache = data.cashfree_payments || [];
+
+  document.getElementById('users-browse-panel').classList.add('hidden');
+  const panel = document.getElementById('users-search-panel');
+  panel.classList.remove('hidden');
+
+  if(!clients.length){
+    panel.innerHTML = `<div class="empty-note">No user matches "${term}".</div>`;
+    return;
+  }
+
+  panel.innerHTML = clients.map(c => {
+    const payments = searchPaymentsCache.filter(p => p.customer_id === c.client_id);
+    const stuck = payments.filter(p => !p.gold_received).length;
+    return `
+    <div class="panel" style="margin-bottom:14px;">
+      <div class="profile-head" style="margin-bottom:14px;cursor:pointer;" onclick="openUserDetail('${c.client_id}')">
+        <div class="av">${(c.full_name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
+        <div>
+          <h2 style="font-size:15px;">${c.full_name} <span class="mono dim" style="font-weight:500;font-size:12px;">${c.mobile}</span></h2>
+          <div class="sub">${c.email||'—'} &middot; ${kycBadge(c.kyc_status)}${stuck ? ` <span class="badge critical">${stuck} order${stuck>1?'s':''} paid, gold not received</span>` : ''}</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Order</th><th class="num">Amount ₹</th><th>Payment</th><th>Fulfillment</th><th></th></tr></thead>
+          <tbody>${payments.length ? payments.map(p => `
+            <tr style="cursor:default;">
+              <td class="dim">${p.created_at}</td>
+              <td class="id-cell">${p.merchant_order_id || p.sabbpe_order_id}</td>
+              <td class="num">${inr(p.order_amount)}</td>
+              ${fulfillmentCells(p, 'search', searchPaymentsCache.indexOf(p))}
+            </tr>`).join('') : '<tr><td colspan="6" class="empty-note">No Cashfree payments on file.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function openUserDetail(client_id){
@@ -1710,6 +1970,89 @@ async function handleChangePassword(e){
   closeModal('modal-change-pass');
   showToast('Password updated');
   return false;
+}
+
+/* ---------------------------------------------------------------------
+   RETRY — paid but no gold: POST /rates/live then POST /buy/create
+   --------------------------------------------------------------------- */
+let currentRetryContext = null; // { source: 'unfulfilled'|'search', idx }
+let currentRetryRates = null;   // last /rates/live result: { gBuy, gSell, sBuy, sSell, blockId }
+
+function getRetryRow(){
+  if(!currentRetryContext) return null;
+  const arr = currentRetryContext.source === 'unfulfilled' ? unfulfilledCache : searchPaymentsCache;
+  return arr[currentRetryContext.idx];
+}
+
+async function openRetryModal(source, idx){
+  currentRetryContext = { source, idx };
+  const row = getRetryRow();
+  if(!row) return;
+  document.getElementById('retry-customer').textContent = (row.customer_name||'—') + ' · ' + (row.customer_mobile||'—');
+  document.getElementById('retry-order').textContent = row.merchant_order_id || row.sabbpe_order_id || '—';
+  document.getElementById('retry-amount').textContent = inr(row.order_amount);
+  document.getElementById('retry-metal').value = 'gold';
+  const btn = document.getElementById('retry-confirm-btn');
+  btn.disabled = false; btn.textContent = 'Confirm retry';
+  openModal('modal-retry');
+  await refreshRetryRate();
+}
+
+async function refreshRetryRate(){
+  document.getElementById('retry-rate').textContent = 'fetching…';
+  const data = await apiRatesLive();
+  const rateData = data.rates?.payload?.result?.data || {};
+  currentRetryRates = { ...(rateData.rates||{}), blockId: rateData.blockId };
+  const metal = document.getElementById('retry-metal').value;
+  const rate = metal === 'gold' ? currentRetryRates.gBuy : currentRetryRates.sBuy;
+  document.getElementById('retry-rate').textContent = rate ? (inr(rate) + ' / g') : 'unavailable';
+}
+
+async function confirmRetry(){
+  const row = getRetryRow();
+  if(!row || !currentRetryRates?.blockId){ showToast('Rate not ready yet — try again in a moment'); return; }
+
+  const uniqueId = row.provider_reference || row.unique_id;
+  if(!uniqueId){ showToast('No Augmont uniqueId on file for this order — cannot retry'); return; }
+
+  const metal = document.getElementById('retry-metal').value;
+  const lockPrice = metal === 'gold' ? currentRetryRates.gBuy : currentRetryRates.sBuy;
+
+  const btn = document.getElementById('retry-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Retrying…';
+
+  try{
+    const res = await apiBuyCreate({
+      lockPrice: String(lockPrice),
+      metalType: metal,
+      amount: String(row.order_amount),
+      uniqueId,
+      mobileNumber: row.customer_mobile,
+      blockId: currentRetryRates.blockId,
+      merchantTransactionId: 'ADMIN-RETRY-' + (row.sabbpe_order_id || row.merchant_order_id || 'ORD') + '-' + Date.now(),
+      quantity: null,
+      phoneNumber: null,
+      modeOfPayment: 'SABBPE',
+      userName: row.customer_name || null,
+    });
+    if(res?.result?.status !== 'success') throw new Error(res?.result?.payload?.message || 'Augmont buy failed');
+
+    row.gold_received = 1;
+    row.fulfillment_status = 'FULFILLMENT_COMPLETED';
+    closeModal('modal-retry');
+    showToast('Gold purchase retried successfully for ' + (row.customer_name || row.customer_mobile));
+
+    if(currentRetryContext.source === 'unfulfilled'){
+      loadUnfulfilled();
+    } else {
+      const term = document.getElementById('user-search').value.trim();
+      if(term) runUserSearch(term);
+    }
+  } catch(err){
+    showToast('Retry failed: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirm retry';
+  }
 }
 
 function showToast(msg){

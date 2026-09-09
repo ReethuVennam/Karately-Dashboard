@@ -5,6 +5,8 @@ import { ToastProvider } from './context/ToastContext';
 import AdminManagement from './pages/AdminManagement';
 import Alerts from './pages/Alerts';
 import BusinessOverview from './pages/BusinessOverview';
+import FulfillmentApprovals from './pages/FulfillmentApprovals';
+import FulfillmentIssues from './pages/FulfillmentIssues';
 import Login from './pages/Login';
 import Orders from './pages/Orders';
 import Overview from './pages/Overview';
@@ -70,9 +72,18 @@ export default function App() {
               <Route path="/" element={<Overview />} />
               <Route path="/business" element={<BusinessOverview />} />
               <Route path="/orders" element={<Orders />} />
+              <Route path="/fulfillment" element={<FulfillmentIssues />} />
               <Route path="/users" element={<Users />} />
               <Route path="/users/:clientId" element={<UserDetail />} />
               <Route path="/alerts" element={<Alerts />} />
+              <Route
+                path="/fulfillment-approvals"
+                element={
+                  <RequireSuperAdmin>
+                    <FulfillmentApprovals />
+                  </RequireSuperAdmin>
+                }
+              />
               <Route
                 path="/admin"
                 element={
