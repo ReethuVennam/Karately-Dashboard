@@ -5,11 +5,15 @@
 
 import { apiGet, apiPost, setSession } from './client';
 
-/** POST /login — body { phoneNumber, password } -> { token, admin }.
- *  Persists the session to localStorage on success. */
+/** POST /login — body { phoneNumber, password } -> { success, admin }.
+ *  The backend no longer returns a token; adminId is sent in request
+ *  bodies instead. Persists the admin to localStorage on success. */
 export async function login(phoneNumber, password) {
   const data = await apiPost('/api/v1/admin/auth/login', { phoneNumber, password });
-  if (data?.token) setSession(data.token, data.admin);
+  if (data?.success === false) {
+    throw new Error(data.message || 'Invalid phone number or password');
+  }
+  if (data?.admin) setSession(null, data.admin);
   return data;
 }
 

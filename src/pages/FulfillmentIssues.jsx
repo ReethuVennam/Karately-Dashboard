@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getUnfulfilledCashfree } from '../api/dashboardApi';
 import FulfillmentStatus from '../components/FulfillmentStatus';
+import OrderLookupModal from '../components/OrderLookupModal';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useInlineRetry } from '../hooks/useInlineRetry';
 import { inr } from '../utils/format';
@@ -13,12 +15,15 @@ const STATUS_CHIPS = [
 ];
 
 export default function FulfillmentIssues() {
+  const { currentAdmin } = useAuth();
+  const adminId = currentAdmin?.id;
   const showToast = useToast();
   const [days, setDays] = useState(90);
   const [status, setStatus] = useState('ALL');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { handleRetry, isSending, isSent } = useInlineRetry();
+  const { handleRetry, isSending, isSent } = useInlineRetry(adminId);
+  const [lookupId, setLookupId] = useState(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -74,6 +79,7 @@ export default function FulfillmentIssues() {
                 <th>Payment</th>
                 <th>Fulfillment</th>
                 <th></th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -85,6 +91,11 @@ export default function FulfillmentIssues() {
                   <td className="id-cell">{o.merchant_order_id || o.sabbpe_order_id}</td>
                   <td className="num">{inr(o.order_amount)}</td>
                   <FulfillmentStatus row={o} onRetry={handleRetry} sending={isSending(o)} sent={isSent(o)} />
+                  <td>
+                    <button className="btn btn-sm" type="button" onClick={() => setLookupId(o.customer_id)}>
+                      Details
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -94,6 +105,10 @@ export default function FulfillmentIssues() {
           <div className="empty-note">Nothing stuck right now — every paid order has been fulfilled.</div>
         ) : null}
       </div>
+
+      {lookupId ? (
+        <OrderLookupModal adminId={adminId} uniqueId={lookupId} onClose={() => setLookupId(null)} />
+      ) : null}
     </section>
   );
 }

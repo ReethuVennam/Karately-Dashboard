@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import * as authApi from '../api/authApi';
-import { clearSession, getStoredAdmin, getToken, setSession, setUnauthorizedHandler } from '../api/client';
+import { clearSession, getStoredAdmin, getToken, setUnauthorizedHandler } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -26,29 +26,17 @@ export function AuthProvider({ children }) {
 
     let cancelled = false;
     async function restore() {
-      const existingToken = getToken();
-      if (!existingToken) {
+      const existingAdmin = getStoredAdmin();
+      if (!existingAdmin) {
         setIsLoading(false);
         return;
       }
-      try {
-        const res = await authApi.validateToken();
-        if (cancelled) return;
-        // The prototype never wired this endpoint up for real, so its body
-        // shape is unknown — any 2xx counts as "still valid". Prefer an
-        // `admin` field in the body if present, otherwise keep the cached one.
-        const admin = res?.admin || getStoredAdmin();
-        if (res?.admin) setSession(existingToken, res.admin);
-        setToken(existingToken);
-        setCurrentAdmin(admin);
-      } catch {
-        if (cancelled) return;
-        clearSession();
-        setToken(null);
-        setCurrentAdmin(null);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+      // No token to validate — trust the stored admin session.
+      // adminId is sent in request bodies for auth, not a bearer token.
+      if (cancelled) return;
+      setToken(null);
+      setCurrentAdmin(existingAdmin);
+      setIsLoading(false);
     }
     restore();
     return () => {
@@ -58,7 +46,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (phoneNumber, password) => {
     const data = await authApi.login(phoneNumber, password);
-    setToken(data.token);
+    setToken(null);
     setCurrentAdmin(data.admin);
     return data;
   }, []);

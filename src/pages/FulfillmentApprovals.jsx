@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listPendingRequests, retryBuy } from '../api/fulfillmentApi';
+import { isRetryBuySuccess, listPendingRequests, retryBuy } from '../api/fulfillmentApi';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
+import OrderLookupModal from '../components/OrderLookupModal';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { inr } from '../utils/format';
 
@@ -9,22 +11,24 @@ const STATUS_BADGE = { PENDING: 'warning', APPROVED: 'info', PROCESSED: 'success
 
 function RetryBuyModal({ request, onClose, onDone }) {
   const showToast = useToast();
-  const [note, setNote] = useState('Retrying gold purchase');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleConfirm = async () => {
     setSubmitting(true);
+    setError(null);
     try {
-      const res = await retryBuy(request.id, note.trim());
-      const status = res?.request?.status;
-      showToast(
-        status === 'PROCESSED'
-          ? `Gold purchase completed for ${request.customer_name || request.customer_mobile}`
-          : `Retry result: ${status || 'unknown'} — check the request row for details`
-      );
-      onDone();
+      const res = await retryBuy(request);
+      if (isRetryBuySuccess(res)) {
+        showToast(`Gold purchase completed for ${request.customer_name || request.customer_mobile}`);
+        onDone();
+      } else {
+        const msg =
+          res?.message || res?.error || (res?.payload && typeof res.payload === 'string' ? res.payload : null);
+        setError(msg || 'Retry buy failed — the purchase was not completed');
+      }
     } catch (err) {
-      showToast(err?.message || 'Retry buy failed');
+      setError(err?.message || 'Retry buy failed');
     } finally {
       setSubmitting(false);
     }
@@ -47,8 +51,8 @@ function RetryBuyModal({ request, onClose, onDone }) {
         <span className="v">{inr(request.order_amount)}</span>
       </div>
       <div className="kv-row">
-        <span className="k">Lock price</span>
-        <span className="v">{request.lock_price ? inr(request.lock_price) + ' / g' : '—'}</span>
+        <span className="k">Metal</span>
+        <span className="v">{request.metal_type || 'gold'}</span>
       </div>
       <div className="kv-row">
         <span className="k">Level 1 note</span>
@@ -63,17 +67,14 @@ function RetryBuyModal({ request, onClose, onDone }) {
         </div>
       ) : null}
 
-      <div className="field" style={{ marginTop: 14 }}>
-        <label>Note</label>
-        <input type="text" value={note} onChange={(e) => setNote(e.target.value)} />
-      </div>
+      {error ? <div className="login-err" style={{ marginTop: 12 }}>{error}</div> : null}
 
       <div className="login-hint" style={{ marginTop: 10 }}>
-        This calls Augmont's buy API right now using the price and block locked when this request was filed — it moves real money and gold.
+        This fetches the live rate, then calls the retry-buy API which purchases the metal at that rate — it moves real money and gold.
       </div>
 
       <div className="modal-actions">
-        <button type="button" className="btn" onClick={onClose}>
+        <button type="button" className="btn" onClick={onClose} disabled={submitting}>
           Cancel
         </button>
         <button type="button" className="btn btn-primary" onClick={handleConfirm} disabled={submitting}>
@@ -85,22 +86,25 @@ function RetryBuyModal({ request, onClose, onDone }) {
 }
 
 export default function FulfillmentApprovals() {
+  const { currentAdmin } = useAuth();
+  const adminId = currentAdmin?.id;
   const showToast = useToast();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeRequest, setActiveRequest] = useState(null);
+  const [lookupId, setLookupId] = useState(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await listPendingRequests();
+      const res = await listPendingRequests(adminId);
       setRequests(res.requests || []);
     } catch (err) {
       showToast(err?.message || 'Failed to load pending requests');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [adminId, showToast]);
 
   useEffect(() => {
     reload();
@@ -133,6 +137,7 @@ export default function FulfillmentApprovals() {
                 <th>Status</th>
                 <th>Retries</th>
                 <th></th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -155,6 +160,11 @@ export default function FulfillmentApprovals() {
                     <Badge variant={STATUS_BADGE[r.status] || 'muted'}>{r.status}</Badge>
                   </td>
                   <td>{r.retry_count > 0 ? `${r.retry_count}× · ${r.last_retry_at || ''}` : '—'}</td>
+                  <td>
+                    <button className="btn btn-sm" type="button" onClick={() => setLookupId(r.customer_id)}>
+                      Details
+                    </button>
+                  </td>
                   <td>
                     {r.status === 'PENDING' || r.status === 'APPROVED' ? (
                       <button className="btn btn-sm btn-primary" type="button" onClick={() => setActiveRequest(r)}>
@@ -181,6 +191,10 @@ export default function FulfillmentApprovals() {
             reload();
           }}
         />
+      ) : null}
+
+      {lookupId ? (
+        <OrderLookupModal adminId={adminId} uniqueId={lookupId} onClose={() => setLookupId(null)} />
       ) : null}
     </section>
   );

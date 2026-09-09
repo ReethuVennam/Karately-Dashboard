@@ -54,11 +54,3 @@ export async function searchClients(term) {
 export async function getUnfulfilledCashfree({ days = 90, status = 'ALL' } = {}) {
   return apiPost('/api/v1/admin/dashboard/unfulfilled-cashfree', { days, status });
 }
-
-/** POST /rates/live — empty body -> live Augmont gold/silver buy/sell rates
- *  + a blockId. Used by fulfillmentApi.requestRetry() to populate
- *  lockPrice/blockId on a fulfillment request — see api/fulfillmentApi.js
- *  for the two-level retry-approval flow itself (create / retry-buy / pending). */
-export async function getLiveRates() {
-  return apiPost('/api/v1/admin/dashboard/rates/live', {});
-}

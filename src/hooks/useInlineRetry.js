@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { requestRetry } from '../api/fulfillmentApi';
+import { createRequest } from '../api/fulfillmentApi';
 import { useToast } from '../context/ToastContext';
+
+const DEFAULT_LEVEL1_NOTE = 'User paid but gold not received';
 
 /**
  * Level 1's one-click Retry: fires POST /fulfillment/create immediately, no
@@ -13,7 +15,7 @@ import { useToast } from '../context/ToastContext';
  * gold_received flag flips on the next list refresh and FulfillmentStatus
  * shows "Received" regardless of this local state.
  */
-export function useInlineRetry() {
+export function useInlineRetry(adminId) {
   const showToast = useToast();
   const [sendingId, setSendingId] = useState(null);
   const [sentIds, setSentIds] = useState(() => new Set());
@@ -22,7 +24,7 @@ export function useInlineRetry() {
     const id = row.sabbpe_order_id;
     setSendingId(id);
     try {
-      const res = await requestRetry(row);
+      const res = await createRequest(adminId, row.customer_id, DEFAULT_LEVEL1_NOTE);
       if (!res?.success) throw new Error(res?.message || 'Failed to send request');
       setSentIds((prev) => new Set(prev).add(id));
       showToast(res.message || 'Request sent to Level 2 admin');
