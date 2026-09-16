@@ -5,6 +5,7 @@ import { ToastProvider } from './context/ToastContext';
 import AdminManagement from './pages/AdminManagement';
 import Alerts from './pages/Alerts';
 import BusinessOverview from './pages/BusinessOverview';
+import ForgotPassword from './pages/ForgotPassword';
 import FulfillmentApprovals from './pages/FulfillmentApprovals';
 import FulfillmentIssues from './pages/FulfillmentIssues';
 import Login from './pages/Login';
@@ -59,6 +60,14 @@ export default function App() {
               element={
                 <PublicOnly>
                   <Login />
+                </PublicOnly>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <PublicOnly>
+                  <ForgotPassword />
                 </PublicOnly>
               }
             />

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { isRetryBuySuccess, listPendingRequests, retryBuy } from '../api/fulfillmentApi';
+import { friendlyBuyError, isKnownBuyIssue, isRetryBuySuccess, listPendingRequests, retryBuy } from '../api/fulfillmentApi';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import OrderLookupModal from '../components/OrderLookupModal';
@@ -9,26 +9,30 @@ import { inr } from '../utils/format';
 
 const STATUS_BADGE = { PENDING: 'warning', APPROVED: 'info', PROCESSED: 'success', REJECTED: 'critical' };
 
-function RetryBuyModal({ request, onClose, onDone }) {
+function RetryBuyModal({ request, adminId, onClose, onDone }) {
   const showToast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [errorIsWarning, setErrorIsWarning] = useState(false);
 
   const handleConfirm = async () => {
     setSubmitting(true);
     setError(null);
+    setErrorIsWarning(false);
     try {
-      const res = await retryBuy(request);
+      const res = await retryBuy(request, adminId);
       if (isRetryBuySuccess(res)) {
         showToast(`Gold purchase completed for ${request.customer_name || request.customer_mobile}`);
         onDone();
       } else {
         const msg =
           res?.message || res?.error || (res?.payload && typeof res.payload === 'string' ? res.payload : null);
-        setError(msg || 'Retry buy failed — the purchase was not completed');
+        setError(msg ? friendlyBuyError(msg) : 'Retry buy failed — the purchase was not completed');
+        setErrorIsWarning(msg ? isKnownBuyIssue(msg) : false);
       }
     } catch (err) {
-      setError(err?.message || 'Retry buy failed');
+      setError(err?.message ? friendlyBuyError(err.message) : 'Retry buy failed');
+      setErrorIsWarning(err?.message ? isKnownBuyIssue(err.message) : false);
     } finally {
       setSubmitting(false);
     }
@@ -67,7 +71,11 @@ function RetryBuyModal({ request, onClose, onDone }) {
         </div>
       ) : null}
 
-      {error ? <div className="login-err" style={{ marginTop: 12 }}>{error}</div> : null}
+      {error ? (
+        <div className={errorIsWarning ? 'login-warn' : 'login-err'} style={{ marginTop: 12 }}>
+          {error}
+        </div>
+      ) : null}
 
       <div className="login-hint" style={{ marginTop: 10 }}>
         This fetches the live rate, then calls the retry-buy API which purchases the metal at that rate — it moves real money and gold.
@@ -185,6 +193,7 @@ export default function FulfillmentApprovals() {
       {activeRequest ? (
         <RetryBuyModal
           request={activeRequest}
+          adminId={adminId}
           onClose={() => setActiveRequest(null)}
           onDone={() => {
             setActiveRequest(null);

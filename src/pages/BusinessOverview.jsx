@@ -1,30 +1,25 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getMisOverview, getRedeems, getSells } from '../api/dashboardApi';
 import Badge from '../components/Badge';
 import { useToast } from '../context/ToastContext';
+import { inr, inrCompact, num } from '../utils/format';
 
-/* Static MIS snapshot — mirrors the Karatly Master MIS report. Unlike the
-   other pages this isn't backed by mockApi.js: the original HTML rendered
-   these numbers straight into the markup (no ?days= API), so they're
-   hardcoded here the same way, as of 31 Aug 2026, 21:00 IST. */
+/* Live MIS snapshot — mirrors the Karatly Master MIS report, now backed by
+   GET /api/v1/admin/dashboard/mis-overview + /sells + /redeems instead of
+   the static numbers the original HTML mockup hardcoded.
+   Karatly Earn/Payout, Customer Earn/Burn and Profit are omitted: the
+   backend returns those as null (no commission/wallet/cashback data exists
+   in the sabbpekaratly DB) — see DashboardController#misOverview. There's
+   also no backend endpoint for a "buy orders" list (only /sells and
+   /redeems exist), so the second table below is Redeem orders, not Buy. */
 
-const buyOrders = [
-  { date: '2026-08-25', name: 'Sai Kiran', mobile: '9963710150', metal: 'gold', amount: '10,000', gold: '0.6', payment: 'SUCCESS', order: 'completed', gateway: 'CASHFREE', title: 'Successfully bought 0.6 grams of gold @ 6740.28', label: 'Successfully bought 0.6 grams…', noteClass: 'faint' },
-  { date: '2026-08-22', name: 'Ravi Teja', mobile: '9000112233', metal: 'diamond', amount: '37,200', gold: '—', payment: 'SUCCESS', order: 'completed', gateway: 'CASHFREE', title: 'Successfully bought 0.12 grams of diamond @ 310000.00', label: 'Successfully bought 0.12 grams…', noteClass: 'faint' },
-  { date: '2026-08-18', name: 'Faisal Ahmed', mobile: '9988776655', metal: 'gold', amount: '8,000', gold: '—', payment: 'SUCCESS', order: 'completed', gateway: 'CASHFREE', title: 'Augmont allocation timed out — payment captured but gold not yet credited', label: '⚠️ Augmont allocation timed out…', noteClass: 'dim' },
-  { date: '2026-08-29', name: 'Karthik Iyer', mobile: '9812340098', metal: 'gold', amount: '6,000', gold: '—', payment: 'FAILED', order: 'failed', gateway: 'EASEBUZZ', title: 'Payment gateway declined the transaction (insufficient funds)', label: '⚠️ Payment gateway declined…', noteClass: 'dim' },
-];
-
-const sellOrders = [
-  { date: '2026-08-30', name: 'Ravi Teja', mobile: '9000112233', metal: 'gold', amount: '38,000', gold: '5.6', payment: 'SUCCESS', order: 'completed', gateway: 'CASHFREE', title: 'Successfully sold 5.6 grams of gold @ 6785.71', label: 'Successfully sold 5.6 grams…', noteClass: 'faint' },
-  { date: '2026-08-25', name: 'Sai Kiran', mobile: '9963710150', metal: 'gold', amount: '12,000', gold: '0.9', payment: 'SUCCESS', order: 'completed', gateway: 'CASHFREE', title: 'Successfully sold 0.9 grams of gold', label: 'Successfully sold 0.9 grams…', noteClass: 'faint' },
-  { date: '2026-08-12', name: 'Divya Sharma', mobile: '9711223344', metal: 'silver', amount: '9,400', gold: '—', payment: 'PENDING', order: 'pending', gateway: 'CASHFREE', title: 'Awaiting Augmont confirmation', label: 'Awaiting Augmont confirmation…', noteClass: 'faint' },
-  { date: '2026-08-06', name: 'Anjali Reddy', mobile: '9550098712', metal: 'gold', amount: '4,200', gold: '0.4', payment: 'SUCCESS', order: 'completed', gateway: 'EASEBUZZ', title: 'Successfully sold 0.4 grams of gold', label: 'Successfully sold 0.4 grams…', noteClass: 'faint' },
-];
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const PAYMENT_VARIANT = { SUCCESS: 'success', FAILED: 'critical', PENDING: 'warning' };
-const ORDER_VARIANT = { completed: 'success', failed: 'critical', pending: 'warning' };
+const ORDER_VARIANT = { completed: 'success', confirmed: 'success', failed: 'critical', pending: 'warning' };
 
-function OrderTable({ rows, onRowClick }) {
+function OrderTable({ rows, onRowClick, gramsLabel }) {
   return (
     <div className="table-wrap">
       <table className="data-table">
@@ -33,58 +28,141 @@ function OrderTable({ rows, onRowClick }) {
             <th>Date</th>
             <th>Customer</th>
             <th>Mobile</th>
-            <th>Type</th>
             <th>Metal</th>
             <th className="num">Amount ₹</th>
-            <th className="num">Gold g</th>
+            <th className="num">{gramsLabel}</th>
             <th>Payment</th>
             <th>Order</th>
             <th>Gateway</th>
-            <th>Augmont</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} onClick={onRowClick} style={{ cursor: 'pointer' }}>
+            <tr key={r.order_id ?? i} onClick={onRowClick} style={{ cursor: 'pointer' }}>
               <td className="dim">{r.date}</td>
               <td>{r.name}</td>
               <td className="mono">{r.mobile}</td>
-              <td>{r.type}</td>
               <td>{r.metal}</td>
               <td className="num">{r.amount}</td>
-              <td className="num">{r.gold}</td>
+              <td className="num">{r.grams}</td>
+              <td>{r.payment ? <Badge variant={PAYMENT_VARIANT[r.payment] || 'muted'}>{r.payment}</Badge> : '—'}</td>
               <td>
-                <Badge variant={PAYMENT_VARIANT[r.payment]}>{r.payment}</Badge>
+                <Badge variant={ORDER_VARIANT[r.order] || 'muted'}>{r.order || '—'}</Badge>
               </td>
-              <td>
-                <Badge variant={ORDER_VARIANT[r.order]}>{r.order}</Badge>
-              </td>
-              <td>{r.gateway}</td>
-              <td className={`addr-cell ${r.noteClass}`} title={r.title}>
-                {r.label}
-              </td>
+              <td>{r.gateway || '—'}</td>
             </tr>
           ))}
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={9} className="empty-note">
+                No orders in this window.
+              </td>
+            </tr>
+          ) : null}
         </tbody>
       </table>
     </div>
   );
 }
 
+function sellRow(r) {
+  return {
+    order_id: r.order_id,
+    date: (r.order_date || '').slice(0, 10),
+    name: r.client_name,
+    mobile: r.client_mobile,
+    metal: r.metal_type,
+    amount: inr(r.sell_value),
+    grams: Number(r.sold_grams || 0).toFixed(2),
+    payment: r.payment_status,
+    order: r.order_status,
+    gateway: r.payment_gateway,
+  };
+}
+
+function redeemRow(r) {
+  return {
+    order_id: r.order_id,
+    date: (r.order_date || '').slice(0, 10),
+    name: r.client_name,
+    mobile: r.client_mobile,
+    metal: r.metal_type,
+    amount: inr(r.order_value),
+    grams: Number(r.item_grams || 0).toFixed(2),
+    payment: null,
+    order: r.order_status,
+    gateway: null,
+  };
+}
+
 export default function BusinessOverview() {
   const navigate = useNavigate();
   const showToast = useToast();
 
+  const today = new Date();
+  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [year] = useState(today.getFullYear());
+  const [overview, setOverview] = useState(null);
+  const [sells, setSells] = useState([]);
+  const [redeems, setRedeems] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMisOverview(month, year)
+      .then((res) => {
+        if (!cancelled) setOverview(res);
+      })
+      .catch(() => {
+        /* handled globally for 401s; other failures just leave the panel empty */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [month, year]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSells(30)
+      .then((res) => {
+        if (!cancelled) setSells(res?.sells || []);
+      })
+      .catch(() => {});
+    getRedeems(30)
+      .then((res) => {
+        if (!cancelled) setRedeems(res?.redeems || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const goUsers = () => navigate('/users');
   const goUsersFlagged = () => navigate('/users', { state: { kyc: 'rejected' } });
   const goOrders = () => navigate('/orders');
+
+  const gmv = overview?.gmv || {};
+  const aum = overview?.aum || {};
+  const coupons = overview?.coupons || {};
+  const watchlist = overview?.watchlist || {};
+  const mdr = overview?.mdr || {};
+
+  const monthSelect = (
+    <select className="mis-select" title="Choose month for this MTD figure" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
+      {MONTH_NAMES.map((m, i) => (
+        <option key={m} value={i + 1}>
+          {m}
+        </option>
+      ))}
+    </select>
+  );
 
   return (
     <section>
       <div className="section-head">
         <div>
           <h2>Business Overview — MIS Snapshot</h2>
-          <div className="desc">Mirrors the Karatly Master MIS report · figures as of 31 Aug 2026, 21:00 IST</div>
+          <div className="desc">Mirrors the Karatly Master MIS report</div>
         </div>
         <div className="flex gap-8">
           <Badge variant="muted">Source: Karatly Master MIS</Badge>
@@ -111,60 +189,29 @@ export default function BusinessOverview() {
             <div className="kpi-label">YTD</div>
             <div className="flex" style={{ justifyContent: 'space-between', alignItems: 'flex-end', gap: 10, marginTop: 8 }}>
               <div>
-                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  Count
-                </div>
-                <div className="kpi-value" style={{ fontSize: 18 }}>
-                  148,600
-                </div>
+                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>Count</div>
+                <div className="kpi-value" style={{ fontSize: 18 }}>{num(gmv.gmv_ytd_count)}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  Value
-                </div>
-                <div className="kpi-value" style={{ fontSize: 18, color: 'var(--gold)' }}>
-                  ₹18.42 Cr
-                </div>
+                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>Value</div>
+                <div className="kpi-value" style={{ fontSize: 18, color: 'var(--gold)' }}>{inrCompact(gmv.gmv_ytd_value)}</div>
               </div>
             </div>
           </div>
           <div className="kpi-card">
             <span className="kpi-bar gold"></span>
             <div className="flex gap-6" style={{ alignItems: 'center' }}>
-              <span className="kpi-label" style={{ margin: 0 }}>
-                MTD
-              </span>
-              <select className="mis-select" title="Choose month for this MTD figure" defaultValue="Aug">
-                <option>Jan</option>
-                <option>Feb</option>
-                <option>Mar</option>
-                <option>Apr</option>
-                <option>May</option>
-                <option>Jun</option>
-                <option>Jul</option>
-                <option>Aug</option>
-                <option>Sep</option>
-                <option>Oct</option>
-                <option>Nov</option>
-                <option>Dec</option>
-              </select>
+              <span className="kpi-label" style={{ margin: 0 }}>MTD</span>
+              {monthSelect}
             </div>
             <div className="flex" style={{ justifyContent: 'space-between', alignItems: 'flex-end', gap: 10, marginTop: 8 }}>
               <div>
-                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  Count
-                </div>
-                <div className="kpi-value" style={{ fontSize: 18 }}>
-                  14,220
-                </div>
+                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>Count</div>
+                <div className="kpi-value" style={{ fontSize: 18 }}>{num(gmv.gmv_mtd_count)}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  Value
-                </div>
-                <div className="kpi-value" style={{ fontSize: 18, color: 'var(--gold)' }}>
-                  ₹1.68 Cr
-                </div>
+                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>Value</div>
+                <div className="kpi-value" style={{ fontSize: 18, color: 'var(--gold)' }}>{inrCompact(gmv.gmv_mtd_value)}</div>
               </div>
             </div>
           </div>
@@ -173,20 +220,12 @@ export default function BusinessOverview() {
             <div className="kpi-label">FTD</div>
             <div className="flex" style={{ justifyContent: 'space-between', alignItems: 'flex-end', gap: 10, marginTop: 8 }}>
               <div>
-                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  Count
-                </div>
-                <div className="kpi-value" style={{ fontSize: 18 }}>
-                  612
-                </div>
+                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>Count</div>
+                <div className="kpi-value" style={{ fontSize: 18 }}>{num(gmv.gmv_ftd_count)}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  Value
-                </div>
-                <div className="kpi-value" style={{ fontSize: 18, color: 'var(--gold)' }}>
-                  ₹7.4 L
-                </div>
+                <div className="faint" style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '.05em' }}>Value</div>
+                <div className="kpi-value" style={{ fontSize: 18, color: 'var(--gold)' }}>{inrCompact(gmv.gmv_ftd_value)}</div>
               </div>
             </div>
           </div>
@@ -212,10 +251,10 @@ export default function BusinessOverview() {
               </thead>
               <tbody>
                 <tr>
-                  <td className="num">14,220</td>
-                  <td className="num">13,540</td>
+                  <td className="num">{num(gmv.txn_mtd_total)}</td>
+                  <td className="num">{num(gmv.txn_mtd_success)}</td>
                   <td>
-                    <Badge variant="critical">680</Badge>
+                    <Badge variant="critical">{num(gmv.txn_mtd_failed)}</Badge>
                   </td>
                 </tr>
               </tbody>
@@ -240,11 +279,11 @@ export default function BusinessOverview() {
               </thead>
               <tbody>
                 <tr>
-                  <td className="num">8,940</td>
-                  <td className="num">5,280</td>
+                  <td className="num">{num(gmv.unique_users)}</td>
+                  <td className="num">{num(gmv.repeat_users)}</td>
                   <td>
                     <a href="javascript:void(0)" onClick={goUsersFlagged} className="badge critical" style={{ cursor: 'pointer' }}>
-                      41
+                      {num(gmv.flagged_users)}
                     </a>
                   </td>
                 </tr>
@@ -266,7 +305,7 @@ export default function BusinessOverview() {
             <thead>
               <tr>
                 <th>Metal</th>
-                <th className="num">Grams purchased</th>
+                <th className="num">Grams / carats purchased</th>
                 <th className="num">Value</th>
                 <th className="num">% of GMV</th>
               </tr>
@@ -274,21 +313,53 @@ export default function BusinessOverview() {
             <tbody>
               <tr>
                 <td className="row-label">Gold</td>
-                <td className="num">612.4 g</td>
-                <td className="num">₹15.86 Cr</td>
-                <td className="num">86.1%</td>
+                <td className="num">{Number(gmv.gold_grams || 0).toFixed(1)} g</td>
+                <td className="num">{inrCompact(gmv.gold_value)}</td>
+                <td className="num">{gmv.gold_pct_gmv ?? 0}%</td>
               </tr>
               <tr>
                 <td className="row-label">Silver</td>
-                <td className="num">2,140.0 g</td>
-                <td className="num">₹1.88 Cr</td>
-                <td className="num">10.2%</td>
+                <td className="num">{Number(gmv.silver_grams || 0).toFixed(1)} g</td>
+                <td className="num">{inrCompact(gmv.silver_value)}</td>
+                <td className="num">{gmv.silver_pct_gmv ?? 0}%</td>
               </tr>
               <tr>
                 <td className="row-label">Diamond</td>
-                <td className="num">18.6 ct</td>
-                <td className="num">₹0.68 Cr</td>
-                <td className="num">3.7%</td>
+                <td className="num">{Number(gmv.diamond_carats || 0).toFixed(1)} ct</td>
+                <td className="num">{inrCompact(gmv.diamond_value)}</td>
+                <td className="num">{gmv.diamond_pct_gmv ?? 0}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-head">
+          <div>
+            <h3>Coupon Usage</h3>
+            <div className="desc">Coupons redeemed by customers — YTD / MTD</div>
+          </div>
+        </div>
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th className="num">Count</th>
+                <th className="num">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="row-label">YTD</td>
+                <td className="num">{num(coupons.coupons_ytd_count)}</td>
+                <td className="num">{inr(coupons.coupons_ytd_value)}</td>
+              </tr>
+              <tr>
+                <td className="row-label">MTD</td>
+                <td className="num">{num(coupons.coupons_mtd_count)}</td>
+                <td className="num">{inr(coupons.coupons_mtd_value)}</td>
               </tr>
             </tbody>
           </table>
@@ -297,28 +368,13 @@ export default function BusinessOverview() {
 
       <div className="section-head" style={{ marginTop: 6 }}>
         <div>
-          <h2>Buy vs. Sell</h2>
-          <div className="desc">Recent orders on each side of the book — click "View more" for the full user list</div>
+          <h2>Sell vs. Redeem</h2>
+          <div className="desc">
+            Recent orders on each side of the book, last 30 days · click "View more" for the full user list
+          </div>
         </div>
       </div>
       <div className="grid-2">
-        <div className="panel">
-          <div className="panel-head">
-            <div>
-              <h3>Buy orders</h3>
-              <div className="desc">Customers purchasing metal</div>
-            </div>
-          </div>
-          <OrderTable rows={buyOrders.map((r) => ({ ...r, type: 'Buy' }))} onRowClick={goUsers} />
-          <div style={{ textAlign: 'right', marginTop: 12 }}>
-            <a href="javascript:void(0)" onClick={goUsers} className="btn btn-ghost btn-sm">
-              View more{' '}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </a>
-          </div>
-        </div>
         <div className="panel">
           <div className="panel-head">
             <div>
@@ -326,7 +382,24 @@ export default function BusinessOverview() {
               <div className="desc">Customers liquidating metal holdings</div>
             </div>
           </div>
-          <OrderTable rows={sellOrders.map((r) => ({ ...r, type: 'Sell' }))} onRowClick={goUsers} />
+          <OrderTable rows={sells.map(sellRow)} onRowClick={goUsers} gramsLabel="Grams" />
+          <div style={{ textAlign: 'right', marginTop: 12 }}>
+            <a href="javascript:void(0)" onClick={goUsers} className="btn btn-ghost btn-sm">
+              View more{' '}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </a>
+          </div>
+        </div>
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <h3>Redeem orders</h3>
+              <div className="desc">Customers redeeming metal for physical delivery</div>
+            </div>
+          </div>
+          <OrderTable rows={redeems.map(redeemRow)} onRowClick={goUsers} gramsLabel="Grams" />
           <div style={{ textAlign: 'right', marginTop: 12 }}>
             <a href="javascript:void(0)" onClick={goUsers} className="btn btn-ghost btn-sm">
               View more{' '}
@@ -338,178 +411,32 @@ export default function BusinessOverview() {
         </div>
       </div>
 
-      <div className="grid-2">
-        <div className="panel">
-          <div className="panel-head">
-            <div>
-              <h3>Karatly Earn</h3>
-              <div className="desc">Commission Karatly earns from its metal vendors</div>
-            </div>
-          </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th className="num">Value</th>
-                  <th className="num">% of GMV</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="row-label">Augmont commission</td>
-                  <td className="num">₹11.2 L</td>
-                  <td className="num">0.6%</td>
-                </tr>
-                <tr>
-                  <td className="row-label">SafeGold commission</td>
-                  <td className="num">₹7.4 L</td>
-                  <td className="num">0.4%</td>
-                </tr>
-              </tbody>
-            </table>
+      <div className="panel">
+        <div className="panel-head">
+          <div>
+            <h3>MDR</h3>
+            <div className="desc">Merchant discount rate by payment mode</div>
           </div>
         </div>
-        <div className="panel">
-          <div className="panel-head">
-            <div>
-              <h3>Karatly Payout</h3>
-              <div className="desc">Wallet points Karatly credits to customers</div>
-            </div>
-          </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th className="num">Value</th>
-                  <th className="num">% of GMV</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="row-label">Wallet points credited</td>
-                  <td className="num">₹5.6 L</td>
-                  <td className="num">0.3%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid-2">
-        <div className="panel">
-          <div className="panel-head">
-            <div>
-              <h3>Customer Earn</h3>
-              <div className="desc">Wallet points and coupons earned by customers</div>
-            </div>
-          </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th className="num">Value</th>
-                  <th className="num">% of GMV</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="row-label">Wallet points earned</td>
-                  <td className="num">₹5.6 L</td>
-                  <td className="num">0.3%</td>
-                </tr>
-                <tr>
-                  <td className="row-label">Coupons redeemed value</td>
-                  <td className="num">₹2.9 L</td>
-                  <td className="num">0.16%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div className="panel">
-          <div className="panel-head">
-            <div>
-              <h3>Customer Burn</h3>
-              <div className="desc">Cashback redeemed by customers on the platform</div>
-            </div>
-          </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th className="num">Value</th>
-                  <th className="num">% of GMV</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="row-label">Cashback redeemed</td>
-                  <td className="num">₹3.2 L</td>
-                  <td className="num">0.17%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid-2">
-        <div className="panel">
-          <div className="panel-head">
-            <div>
-              <h3>MDR</h3>
-              <div className="desc">Merchant discount rate by payment mode</div>
-            </div>
-          </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>UPI</th>
-                  <th>Debit card</th>
-                  <th>Credit card</th>
-                  <th>Netbanking</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="num">0.30%</td>
-                  <td className="num">0.90%</td>
-                  <td className="num">1.80%</td>
-                  <td className="num">0.60%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div className="panel">
-          <div className="panel-head">
-            <div>
-              <h3>Profit</h3>
-              <div className="desc">Net platform profit</div>
-            </div>
-          </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Value</th>
-                  <th>%</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="num">₹47.2 L</td>
-                  <td className="num">2.56%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>UPI</th>
+                <th>Debit card</th>
+                <th>Credit card</th>
+                <th>Netbanking</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="num">{mdr.upi ?? '—'}%</td>
+                <td className="num">{mdr.debit_card ?? '—'}%</td>
+                <td className="num">{mdr.credit_card ?? '—'}%</td>
+                <td className="num">{mdr.netbanking ?? '—'}%</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -524,55 +451,30 @@ export default function BusinessOverview() {
           <div className="kpi-card">
             <span className="kpi-bar gold"></span>
             <div className="kpi-label">YTD</div>
-            <div className="kpi-value" style={{ fontSize: 20, color: 'var(--gold)', marginTop: 8 }}>
-              ₹22.4 Cr
-            </div>
+            <div className="kpi-value" style={{ fontSize: 20, color: 'var(--gold)', marginTop: 8 }}>{inrCompact(aum.aum_ytd)}</div>
           </div>
           <div className="kpi-card">
             <span className="kpi-bar gold"></span>
             <div className="flex gap-6" style={{ alignItems: 'center' }}>
-              <span className="kpi-label" style={{ margin: 0 }}>
-                MTD
-              </span>
-              <select className="mis-select" title="Choose month for this MTD figure" defaultValue="Aug">
-                <option>Jan</option>
-                <option>Feb</option>
-                <option>Mar</option>
-                <option>Apr</option>
-                <option>May</option>
-                <option>Jun</option>
-                <option>Jul</option>
-                <option>Aug</option>
-                <option>Sep</option>
-                <option>Oct</option>
-                <option>Nov</option>
-                <option>Dec</option>
-              </select>
+              <span className="kpi-label" style={{ margin: 0 }}>MTD</span>
+              {monthSelect}
             </div>
-            <div className="kpi-value" style={{ fontSize: 20, color: 'var(--gold)', marginTop: 8 }}>
-              ₹1.92 Cr
-            </div>
+            <div className="kpi-value" style={{ fontSize: 20, color: 'var(--gold)', marginTop: 8 }}>{inrCompact(aum.aum_mtd)}</div>
           </div>
           <div className="kpi-card">
             <span className="kpi-bar gold"></span>
-            <div className="kpi-label">FTD</div>
-            <div className="kpi-value" style={{ fontSize: 20, color: 'var(--gold)', marginTop: 8 }}>
-              ₹9.6 L
-            </div>
+            <div className="kpi-label">Run rate</div>
+            <div className="kpi-value" style={{ fontSize: 20, color: 'var(--gold)', marginTop: 8 }}>{inrCompact(aum.aum_run_rate_monthly)} / mo</div>
           </div>
         </div>
         <div style={{ marginTop: 12 }}>
           <div className="kv-row">
-            <span className="k">Run rate</span>
-            <span className="v">₹2.1 Cr / month</span>
-          </div>
-          <div className="kv-row">
             <span className="k">Avg. holding per user</span>
-            <span className="v">₹18,240</span>
+            <span className="v">{inr(aum.avg_holding_per_user)}</span>
           </div>
           <div className="kv-row">
             <span className="k">Redemption rate</span>
-            <span className="v">3.9% of AUM / month</span>
+            <span className="v">{aum.redemption_rate_pct ?? 0}% of AUM / month</span>
           </div>
         </div>
       </div>
@@ -599,7 +501,13 @@ export default function BusinessOverview() {
           <h4>High margin metal</h4>
           <p>Best spread contribution this month.</p>
           <div className="r-foot">
-            <Badge variant="success">Gold · 2.3% spread</Badge>
+            {watchlist.high_margin_metal ? (
+              <Badge variant="success">
+                {watchlist.high_margin_metal} · {watchlist.high_margin_pct}% spread
+              </Badge>
+            ) : (
+              <Badge variant="muted">No data</Badge>
+            )}
           </div>
         </div>
         <div className="report-card" onClick={goOrders}>
@@ -611,7 +519,13 @@ export default function BusinessOverview() {
           <h4>Low margin metal</h4>
           <p>Thinnest spread — review pricing.</p>
           <div className="r-foot">
-            <Badge variant="warning">Silver · 0.6% spread</Badge>
+            {watchlist.low_margin_metal ? (
+              <Badge variant="warning">
+                {watchlist.low_margin_metal} · {watchlist.low_margin_pct}% spread
+              </Badge>
+            ) : (
+              <Badge variant="muted">No data</Badge>
+            )}
           </div>
         </div>
         <div className="report-card" onClick={goOrders}>
@@ -623,7 +537,13 @@ export default function BusinessOverview() {
           <h4>High volume metal</h4>
           <p>Most purchased metal, last 30 days.</p>
           <div className="r-foot">
-            <Badge variant="info">Gold · 612.4 g</Badge>
+            {watchlist.high_volume_metal ? (
+              <Badge variant="info">
+                {watchlist.high_volume_metal} · {Number(watchlist.high_volume_grams || 0).toFixed(1)} g
+              </Badge>
+            ) : (
+              <Badge variant="muted">No data</Badge>
+            )}
           </div>
         </div>
         <div className="report-card" onClick={goOrders}>
@@ -636,7 +556,7 @@ export default function BusinessOverview() {
           <h4>Zero volume metal</h4>
           <p>No purchases in the last 30 days.</p>
           <div className="r-foot">
-            <Badge variant="critical">Platinum · 0 g</Badge>
+            <Badge variant="critical">{watchlist.zero_volume_metals || 'None'}</Badge>
           </div>
         </div>
       </div>

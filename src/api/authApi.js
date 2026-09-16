@@ -24,9 +24,39 @@ export async function validateToken() {
   return apiPost('/api/v1/admin/auth/validate-token');
 }
 
-/** POST /change-password — body { currentPassword, newPassword }, authed as self. */
-export async function changePassword(currentPassword, newPassword) {
-  return apiPost('/api/v1/admin/auth/change-password', { currentPassword, newPassword });
+/** POST /change-password — body { adminId, existingPassword, newPassword, confirmPassword }.
+ *  New password must be at least 8 characters with one letter and one digit. */
+export async function changePassword(adminId, existingPassword, newPassword, confirmPassword) {
+  const data = await apiPost('/api/v1/admin/auth/change-password', {
+    adminId,
+    existingPassword,
+    newPassword,
+    confirmPassword,
+  });
+  if (data?.success === false) {
+    throw new Error(data.message || 'Failed to change password');
+  }
+  return data;
+}
+
+/** POST /forgot-password — body { identifier, existingPassword, newPassword?, confirmPassword? }.
+ *  identifier + existingPassword are required — the backend verifies existingPassword
+ *  against the stored BCrypt hash before setting a new one. newPassword/confirmPassword
+ *  are optional: omit them to get a random backend-generated password, or supply a
+ *  matching pair to set a password of the admin's own choosing instead. Returns
+ *  { success, generatedPassword, phoneNumber, email } — the backend stores only the
+ *  BCrypt hash, so this is the admin's one chance to see the password now in effect. */
+export async function forgotPassword(identifier, existingPassword, newPassword, confirmPassword) {
+  const data = await apiPost('/api/v1/admin/auth/forgot-password', {
+    identifier,
+    existingPassword,
+    newPassword: newPassword || undefined,
+    confirmPassword: confirmPassword || undefined,
+  });
+  if (data?.success === false) {
+    throw new Error(data.message || 'Admin account not found or inactive');
+  }
+  return data;
 }
 
 /** POST /reset-password — body { phoneNumber, newPassword }, super-admin only. */

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -69,6 +69,9 @@ export default function Login() {
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        <div className="login-forgot">
+          <Link to="/forgot-password">Forgot password?</Link>
+        </div>
       </div>
     </div>
   );

@@ -54,3 +54,23 @@ export async function searchClients(term) {
 export async function getUnfulfilledCashfree({ days = 90, status = 'ALL' } = {}) {
   return apiPost('/api/v1/admin/dashboard/unfulfilled-cashfree', { days, status });
 }
+
+/** GET /mis-overview?month=&year= -> { gmv, aum, coupons, watchlist, mdr,
+ *  augmont_commission, safegold_commission, wallet_points_credited,
+ *  wallet_points_earned, cashback_redeemed, net_profit, profit_pct }.
+ *  The commission/wallet/profit keys are always null — not tracked in the
+ *  sabbpekaratly DB — callers should hide those sections rather than render
+ *  a blank/zero value. Omit month/year for the current month. */
+export async function getMisOverview(month, year) {
+  return apiGet('/api/v1/admin/dashboard/mis-overview', { params: { month, year } });
+}
+
+/** GET /sells?days= -> { sells: [...] } — digital_sell orders with grams/rate/value. */
+export async function getSells(days) {
+  return apiGet('/api/v1/admin/dashboard/sells', { params: { days } });
+}
+
+/** GET /redeems?days= -> { redeems: [...] } — physical_redemption orders with grams/address. */
+export async function getRedeems(days) {
+  return apiGet('/api/v1/admin/dashboard/redeems', { params: { days } });
+}

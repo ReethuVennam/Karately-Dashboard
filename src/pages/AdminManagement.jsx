@@ -2,12 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { changePassword, createAdmin, listAdmins, resetPassword } from '../api/authApi';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 const emptyCreateForm = { name: '', phone: '', email: '', pass: '', super: false };
+const emptyChangeForm = { current: '', next: '', confirm: '' };
 
 export default function AdminManagement() {
   const showToast = useToast();
+  const { currentAdmin } = useAuth();
 
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +18,8 @@ export default function AdminManagement() {
   const [openModal, setOpenModal] = useState(null); // null | 'create' | 'reset' | 'change'
   const [createForm, setCreateForm] = useState(emptyCreateForm);
   const [resetForm, setResetForm] = useState({ phone: '', pass: '' });
-  const [changeForm, setChangeForm] = useState({ current: '', next: '' });
+  const [changeForm, setChangeForm] = useState(emptyChangeForm);
+  const [changeError, setChangeError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const fetchAdmins = useCallback(async () => {
@@ -38,7 +42,8 @@ export default function AdminManagement() {
     setOpenModal(null);
     setCreateForm(emptyCreateForm);
     setResetForm({ phone: '', pass: '' });
-    setChangeForm({ current: '', next: '' });
+    setChangeForm(emptyChangeForm);
+    setChangeError('');
   };
 
   const handleCreateAdmin = async (e) => {
@@ -79,13 +84,18 @@ export default function AdminManagement() {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    setChangeError('');
+    if (changeForm.next !== changeForm.confirm) {
+      setChangeError('New password and confirmation do not match');
+      return;
+    }
     setSubmitting(true);
     try {
-      await changePassword(changeForm.current, changeForm.next);
+      const data = await changePassword(currentAdmin?.id, changeForm.current, changeForm.next, changeForm.confirm);
       closeAll();
-      showToast('Password updated');
+      showToast(data?.message || 'Password changed successfully');
     } catch (err) {
-      showToast(err?.message || 'Current password is incorrect');
+      setChangeError(err?.message || 'Existing password is incorrect');
     } finally {
       setSubmitting(false);
     }
@@ -212,9 +222,10 @@ export default function AdminManagement() {
 
       {openModal === 'change' ? (
         <Modal title="Change my password" onClose={closeAll}>
+          {changeError ? <div className="login-err">{changeError}</div> : null}
           <form onSubmit={handleChangePassword}>
             <div className="field">
-              <label>Current password</label>
+              <label>Existing password</label>
               <input
                 type="password"
                 required
@@ -224,7 +235,22 @@ export default function AdminManagement() {
             </div>
             <div className="field">
               <label>New password</label>
-              <input type="password" required value={changeForm.next} onChange={(e) => setChangeForm({ ...changeForm, next: e.target.value })} />
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={changeForm.next}
+                onChange={(e) => setChangeForm({ ...changeForm, next: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Confirm new password</label>
+              <input
+                type="password"
+                required
+                value={changeForm.confirm}
+                onChange={(e) => setChangeForm({ ...changeForm, confirm: e.target.value })}
+              />
             </div>
             <div className="modal-actions">
               <button type="button" className="btn" onClick={closeAll}>

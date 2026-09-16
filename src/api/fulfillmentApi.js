@@ -54,11 +54,12 @@ export async function lookupUnique(adminId, uniqueId) {
 }
 
 /** POST /retry-buy — Level 2 only. The backend receives the full sabbpegold
- *  wrapper (merchantId + request{...}); the frontend must supply lockPrice +
- *  blockId from a SINGLE live-rates call and the rest from the pending
- *  request row. No adminId / note in this contract.
+ *  wrapper (merchantId + request{...}) plus requestId/adminId so it can mark
+ *  the Level 1 request PROCESSED/REJECTED once the buy resolves — without
+ *  these, createBuyOrder only updates the Augmont/Cashfree side and the
+ *  request stays stuck showing PENDING forever, even after a real success.
  *  -> { status, payload } — check isRetryBuySuccess(). */
-export async function retryBuy(requestRow) {
+export async function retryBuy(requestRow, adminId) {
   const rate = await fetchLiveRate();
 
   const metalType = requestRow.metal_type || 'gold';
@@ -69,6 +70,8 @@ export async function retryBuy(requestRow) {
 
   const merchantTransactionId = requestRow.merchant_order_id || requestRow.sabbpe_order_id;
   const body = {
+    requestId: requestRow.id,
+    adminId,
     merchantId: merchantTransactionId,
     request: {
       lockPrice: String(lockPriceRaw),
@@ -89,6 +92,38 @@ export async function retryBuy(requestRow) {
 /** POST /retry-buy always answers HTTP 200 — the outcome lives in the body. */
 export function isRetryBuySuccess(data) {
   return !!(data && (data.status === 'success' || data.payload?.statusCode === 200));
+}
+
+/** On failure, /retry-buy's `message` is the backend's raw HTTP-client dump
+ *  of the downstream Augmont call, e.g.
+ *  `400 400 on POST request for "https://.../orders/buy/create": "{\"message\":\"User must be created before calling this API\",...}"`.
+ *  Pull just the Augmont error text out of that instead of showing the dump. */
+function extractBuyErrorMessage(raw) {
+  if (!raw || typeof raw !== 'string') return raw;
+  const match = raw.match(/"message"\s*:\s*"([^"]*)"/);
+  return match ? match[1] : raw;
+}
+
+/** Known Augmont error strings, reworded for an admin who isn't familiar
+ *  with Augmont's API contract. These are expected/handled business states
+ *  (e.g. customer not yet onboarded) rather than unexpected failures — shown
+ *  as a warning in the UI instead of a hard error (see isKnownBuyIssue). */
+const FRIENDLY_BUY_ERRORS = {
+  'User must be created before calling this API':
+    "This customer doesn't have an Augmont account yet (no uniqueId on file) — the user must be onboarded with Augmont before gold can be purchased for them.",
+};
+
+/** Turn a /retry-buy failure message into something safe to show an admin. */
+export function friendlyBuyError(raw) {
+  const msg = extractBuyErrorMessage(raw);
+  return FRIENDLY_BUY_ERRORS[msg] || msg;
+}
+
+/** True when the raw failure message is one of the known/expected Augmont
+ *  business-state errors above, rather than a genuine unexpected failure. */
+export function isKnownBuyIssue(raw) {
+  const msg = extractBuyErrorMessage(raw);
+  return Object.prototype.hasOwnProperty.call(FRIENDLY_BUY_ERRORS, msg);
 }
 
 /** POST /pending — Level 2 only. -> { requests: [...] } */

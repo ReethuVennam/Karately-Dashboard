@@ -1,6 +1,15 @@
 /** ₹ amount, rounded, grouped Indian-style: inr(12345) -> "₹12,345" */
 export const inr = (n) => '₹' + Math.round(n || 0).toLocaleString('en-IN');
 
+/** ₹ amount, compact Indian units: inrCompact(184200000) -> "₹18.42 Cr" */
+export const inrCompact = (n) => {
+  const v = Number(n || 0);
+  const abs = Math.abs(v);
+  if (abs >= 1e7) return '₹' + (v / 1e7).toFixed(2) + ' Cr';
+  if (abs >= 1e5) return '₹' + (v / 1e5).toFixed(2) + ' L';
+  return inr(v);
+};
+
 /** Plain grouped number, Indian-style: num(12345) -> "12,345" */
 export const num = (n) => Number(n || 0).toLocaleString('en-IN');
 
